@@ -138,5 +138,7 @@ results/
 test-data/
 *.tif
 *.tiff
+*.png
+*/
 
 
