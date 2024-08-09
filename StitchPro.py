@@ -35,6 +35,20 @@ import time
 
 import matplotlib.pyplot as plt # DEBUGGING
 
+# Names
+files = ["upper_right", "bottom_right", "bottom_left", "upper_left"]
+root_folder = os.getcwd()
+
+# DEBUGGING
+# create folder
+save_dir = os.path.join(root_folder, 'debug')
+
+try:
+    os.makedirs(save_dir, exist_ok=True)
+    print(f"Cartella '{save_dir}' creata con successo")
+except OSError as e:
+    print(f"Errore nella creazione della cartella: {e}")
+
 ## App description
 st.title("StitchPro")
 
@@ -51,6 +65,8 @@ img_file_buffer_ll = st.file_uploader("Bottom-left (BL) fragment:", type=["tiff"
 img_file_buffer_ul = st.file_uploader("Upper-left (UL) fragment:", type=["tiff"])
 
 if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_file_buffer_ll is not None) & (img_file_buffer_ul is not None):
+
+    # Read the images with name histo_fragment_[pos]
     histo_fragment_ur = imageio.imread(img_file_buffer_ur)
     st.sidebar.image(histo_fragment_ur, caption="UR fragment", use_column_width=True)
     histo_fragment_lr = imageio.imread(img_file_buffer_lr)
@@ -60,6 +76,13 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
     histo_fragment_ul = imageio.imread(img_file_buffer_ul)
     st.sidebar.image(histo_fragment_ul, caption="UL fragment", use_column_width=True)
 
+    print("Dimensioni originali immagini")
+    print(histo_fragment_ur.shape)
+    print(histo_fragment_lr.shape)
+    print(histo_fragment_ll.shape)
+    print(histo_fragment_ul.shape)
+
+    # Rotate images if user use the option
     angle_options = [-90, 0, 90, 180]
     angle_choice_ur = st.selectbox("Angle to rotate the UR fragment", angle_options, index = 1)
     if int(angle_choice_ur) == 90:
@@ -118,17 +141,39 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
     histo_fragment_ul = rescale(histo_fragment_ul, 1 / DOWNSAMPLE_LEVEL, channel_axis=2,
                                 preserve_range=True).astype(np.uint8)
 
+    print("Dimensioni dopo downsampling:")
+    print(histo_fragment_ur.shape)
+    print(histo_fragment_lr.shape)
+    print(histo_fragment_ll.shape)
+    print(histo_fragment_ul.shape)
+
     ### Find image contours
 
     ## Convert from RGB image to grayscale
+    # ATTENTIONE QUI HO CAMBIATO CODICE: ERA 256 PRIMA
     histo_fragment_gray_binary_ll = color.rgb2gray(histo_fragment_ll)
-    histo_fragment_gray_ll = (histo_fragment_gray_binary_ll * 256).astype('uint8')
+    histo_fragment_gray_ll = (histo_fragment_gray_binary_ll * 255).astype('uint8')
     histo_fragment_gray_binary_lr = color.rgb2gray(histo_fragment_lr)
-    histo_fragment_gray_lr = (histo_fragment_gray_binary_lr * 256).astype('uint8')
+    histo_fragment_gray_lr = (histo_fragment_gray_binary_lr * 255).astype('uint8')
     histo_fragment_gray_binary_ul = color.rgb2gray(histo_fragment_ul)
-    histo_fragment_gray_ul = (histo_fragment_gray_binary_ul * 256).astype('uint8')
+    histo_fragment_gray_ul = (histo_fragment_gray_binary_ul * 255).astype('uint8')
     histo_fragment_gray_binary_ur = color.rgb2gray(histo_fragment_ur)
-    histo_fragment_gray_ur = (histo_fragment_gray_binary_ur * 256).astype('uint8')
+    histo_fragment_gray_ur = (histo_fragment_gray_binary_ur * 255).astype('uint8')
+
+    print("Dimensioni dopo grayscale:")
+    print(histo_fragment_gray_ur.shape)
+    print(histo_fragment_gray_lr.shape)
+    print(histo_fragment_gray_ll.shape)
+    print(histo_fragment_gray_ul.shape)
+
+    plt.imshow(histo_fragment_gray_ll, cmap="gray")
+    plt.savefig(os.path.join(save_dir, f'lower_left_gray_scale.png'))
+    plt.imshow(histo_fragment_gray_lr, cmap="gray")
+    plt.savefig(os.path.join(save_dir, f'lower_right_gray_scale.png'))
+    plt.imshow(histo_fragment_gray_ul, cmap="gray")
+    plt.savefig(os.path.join(save_dir, f'upper_left_gray_scale.png'))
+    plt.imshow(histo_fragment_gray_ur, cmap="gray")
+    plt.savefig(os.path.join(save_dir, f'upper_right_gray_scale.png'))
 
     ## Intensity histogram
     hist_ul = ndi.histogram(histo_fragment_gray_ul, min=0, max=255, bins=256)
@@ -143,6 +188,15 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
     image_thresholded_ur = histo_fragment_gray_ur < thresh
     image_thresholded_lr = histo_fragment_gray_lr < thresh
     image_thresholded_ll = histo_fragment_gray_ll < thresh
+
+    plt.imshow(image_thresholded_ul, cmap="gray")
+    plt.savefig(os.path.join(save_dir, f'upper_left_segmentation.png'))
+    plt.imshow(image_thresholded_ur, cmap="gray")
+    plt.savefig(os.path.join(save_dir, f'upper_right_segmentation.png'))
+    plt.imshow(image_thresholded_lr, cmap="gray")
+    plt.savefig(os.path.join(save_dir, f'lower_right_segmentation.png'))
+    plt.imshow(image_thresholded_ll, cmap="gray")
+    plt.savefig(os.path.join(save_dir, f'lower_left_segmentation.png'))
 
     ## Apply median filter to reduce the noise
     median_filter_ur_x = st.slider('Median filter size for UR', 5, 50, 20)
@@ -181,7 +235,8 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
     if st.button("Start stitching!")==True:
 
        # par is the array of the solution to be optimized
-        def circle_arc_loss_cv(par, mask, pad=20, save=False):
+       # HO CAMBIATO DA 20 A 200 IL PAD
+        def circle_arc_loss_cv(par, mask, pad=200, save=False):
             mask = cv2.copyMakeBorder(
                 mask, pad, pad, pad, pad, cv2.BORDER_CONSTANT)
             cx, cy, r1, r2, theta_1, theta_plus = par
@@ -250,9 +305,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
         N_segments = len(images)
         segment_angle = 2 * np.pi / N_segments
 
-        # Names
-        files = ["upper_right", "bottom_right", "bottom_left", "upper_left"]
-        root_folder = os.getcwd()
+
 
         for i in range(len(tissue_masks)):
             x = tissue_masks[i]
