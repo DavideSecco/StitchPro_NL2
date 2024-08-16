@@ -237,7 +237,8 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
 
        # par is the array of the solution to be optimized
        # HO CAMBIATO DA 20 A 200 IL PAD
-        def circle_arc_loss_cv(par, mask, pad=200, save=False):
+       # L'HO CAMBIATO DA 200 a 1000
+        def circle_arc_loss_cv(par, mask, pad=1500, save=False):
             mask = cv2.copyMakeBorder(
                 mask, pad, pad, pad, pad, cv2.BORDER_CONSTANT)
             cx, cy, r1, r2, theta_1, theta_plus = par
@@ -251,7 +252,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
 
             # this is just for debugging purposes
             if save:
-                plt.figure(figsize=(10,10))
+                plt.figure(figsize=(50, 50))
                 plt.imshow(O, cmap='gray')
                 plt.savefig('best_ellipse_solution.png')
 
@@ -457,7 +458,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
                 np.array(np.where(pos_axis_line_mask * x_out)).T, 1, 1)
 
             ### DEBUGGING
-            debug = False
+            debug = True
             if debug:
                 xx = images[i].copy()
                 for pointt in pos_points:
