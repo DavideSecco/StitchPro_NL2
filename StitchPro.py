@@ -76,11 +76,11 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
     histo_fragment_ul = imageio.imread(img_file_buffer_ul)
     st.sidebar.image(histo_fragment_ul, caption="UL fragment", use_column_width=True)
 
-    print("Dimensioni originali immagini")
-    print(histo_fragment_ur.shape)
-    print(histo_fragment_lr.shape)
-    print(histo_fragment_ll.shape)
-    print(histo_fragment_ul.shape)
+    # print("Dimensioni originali immagini")
+    # print(histo_fragment_ur.shape)
+    # print(histo_fragment_lr.shape)
+    # print(histo_fragment_ll.shape)
+    # print(histo_fragment_ul.shape)
 
     # Rotate images if user use the option
     angle_options = [-90, 0, 90, 180]
@@ -130,6 +130,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
     sub_bound_y = st.slider("Value to subtract from y boundary of output image:", 0, 1000, 550)
 
     # Downsample the images
+    # ATTENZIONE il livello di downsampling prima era settato a 4
     DOWNSAMPLE_LEVEL = 4  # avoid running the optimization for the entire image
     add = 0
     histo_fragment_lr = rescale(histo_fragment_lr, 1 / DOWNSAMPLE_LEVEL, channel_axis=2,
@@ -141,11 +142,11 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
     histo_fragment_ul = rescale(histo_fragment_ul, 1 / DOWNSAMPLE_LEVEL, channel_axis=2,
                                 preserve_range=True).astype(np.uint8)
 
-    print("Dimensioni dopo downsampling:")
-    print(histo_fragment_ur.shape)
-    print(histo_fragment_lr.shape)
-    print(histo_fragment_ll.shape)
-    print(histo_fragment_ul.shape)
+    # print("Dimensioni dopo downsampling:")
+    # print(histo_fragment_ur.shape)
+    # print(histo_fragment_lr.shape)
+    # print(histo_fragment_ll.shape)
+    # print(histo_fragment_ul.shape)
 
     ### Find image contours
 
@@ -160,11 +161,11 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
     histo_fragment_gray_binary_ur = color.rgb2gray(histo_fragment_ur)
     histo_fragment_gray_ur = (histo_fragment_gray_binary_ur * 255).astype('uint8')
 
-    print("Dimensioni dopo grayscale:")
-    print(histo_fragment_gray_ur.shape)
-    print(histo_fragment_gray_lr.shape)
-    print(histo_fragment_gray_ll.shape)
-    print(histo_fragment_gray_ul.shape)
+    # print("Dimensioni dopo grayscale:")
+    # print(histo_fragment_gray_ur.shape)
+    # print(histo_fragment_gray_lr.shape)
+    # print(histo_fragment_gray_ll.shape)
+    # print(histo_fragment_gray_ul.shape)
 
     plt.imshow(histo_fragment_gray_ll, cmap="gray")
     plt.savefig(os.path.join(save_dir, f'lower_left_gray_scale.png'))
