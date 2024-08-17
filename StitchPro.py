@@ -238,7 +238,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
        # par is the array of the solution to be optimized
        # HO CAMBIATO DA 20 A 200 IL PAD
        # L'HO CAMBIATO DA 200 a 1000
-        def circle_arc_loss_cv(par, mask, pad=1500, save=False):
+        def circle_arc_loss_cv(par, mask, pad=1500, save=False, name='best_ellipse_solution.png'):
             mask = cv2.copyMakeBorder(
                 mask, pad, pad, pad, pad, cv2.BORDER_CONSTANT)
             cx, cy, r1, r2, theta_1, theta_plus = par
@@ -254,7 +254,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             if save:
                 plt.figure(figsize=(50, 50))
                 plt.imshow(O, cmap='gray')
-                plt.savefig('best_ellipse_solution.png')
+                plt.savefig(name)
 
             fn = np.sum((mask == 1) & (O == 0))
             I = np.sum(O * mask)
@@ -369,36 +369,57 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             # initialization has inside the coordinates of the
             initializations = []
 
-            for init_x in [0, Mx / 2, Mx]:
-                for init_y in [0, My / 2, My]:
-                    initializations.append((init_y, init_x))
+            # qui ho cambiato le inizializzazioni
+            # for init_x in [0, Mx]:
+            #     for init_y in [My, 0]:
+            #         initializations.append((init_y, init_x))
 
+            initializations = [
+                (0, My),
+                (0, 0),
+                (Mx, 0),
+                (Mx, My)
+            ]
 
             solutions = []
-            for init in initializations:
-                print("Trying initialization for segment {}: {}".format(i, init))
+            print("Trying initialization for segment {}: {}".format(i, initializations[i]))
 
-                # curr_theta -np.pi/8 = -9/8*pi
-                # curr_theta + extra_theta = pi
-                # segment angle is the angle of the n quadrants (e.g. if 4 quadrants, segment angle is 2*pi/4)
-                bounds = [(0, M), (0, M), (0, M), (0, M),
-                          (curr_theta - np.pi / 8, curr_theta + extra_theta),
-                          (segment_angle * 0.8, segment_angle * 1.2)]
-                x0 = [init[0], init[1], M / 2, M / 2,
-                      curr_theta, segment_angle]
+            # curr_theta -np.pi/8 = -9/8*pi
+            # curr_theta + extra_theta = pi
+            # segment angle is the angle of the n quadrants (e.g. if 4 quadrants, segment angle is 2*pi/4)
+            bounds = [(0, M), (0, M), (0, M), (0, M),
+                      (curr_theta - np.pi / 8, curr_theta + extra_theta),
+                      (segment_angle * 0.8, segment_angle * 1.2)]
+            x0 = [initializations[i][0], initializations[i][1], M / 2, M / 2,
+                  curr_theta, segment_angle]
 
-                # differential_evolution optimizes a properly defined loss function (see circle_arc_loss_cv
-                # implementation
+            # differential_evolution optimizes a properly defined loss function (see circle_arc_loss_cv
+            # implementation
 
-                solution = optimize.differential_evolution(
-                    circle_arc_loss_cv, x0=x0, bounds=bounds,
-                    args=[x, pad], popsize=POP_SIZE, maxiter=250, workers=1)  # updating='immediate'
-                solutions.append(solution)
-                # print('\n', solution)
-                # solution.x is the array of parameter of the optimized solution
-                # circle_arc_loss_cv(solution.x, x, pad, show=False)
+            # MAXITER WAS SET TO 250 originally
+            solution = optimize.differential_evolution(
+                circle_arc_loss_cv, x0=x0, bounds=bounds,
+                args=[x, pad], popsize=POP_SIZE, maxiter=250, workers=1)  # updating='immediate'
+            solutions.append(solution)
+            # print('\n', solution)
+            # solution.x is the array of parameter of the optimized solution
+            # circle_arc_loss_cv(solution.x, x, pad, show=False)
 
             # print([s.fun for s in solutions])
+
+            # this is to save the entire series of ellipse solutions generated
+            debug_this = True
+            if debug_this:
+                new_save_dir = os.path.join(save_dir, 'solutions_series')
+                try:
+                    os.makedirs(new_save_dir, exist_ok=True)
+                    print(f"Cartella '{new_save_dir}' creata con successo")
+                except OSError as e:
+                    print(f"Errore nella creazione della cartella: {e}")
+            os.chdir(new_save_dir)
+            for y, sol in enumerate(solutions):
+                circle_arc_loss_cv(sol.x, x, pad, save=True, name=f'img_{y}')
+
 
             # looking for the best solution
             solution_idx = np.argmin([s.fun for s in solutions])
@@ -462,10 +483,10 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             if debug:
                 xx = images[i].copy()
                 for pointt in pos_points:
-                    cv2.drawMarker(xx, pointt, [255, 0, 0], cv2.MARKER_CROSS, thickness=2)
+                    cv2.drawMarker(xx, pointt, [255, 0, 0], cv2.MARKER_CROSS, thickness=1)
 
                 for pointt in ant_points:
-                    cv2.drawMarker(xx, pointt, [255, 255, 0], cv2.MARKER_CROSS, thickness=2)
+                    cv2.drawMarker(xx, pointt, [255, 255, 0], cv2.MARKER_CROSS, thickness=1)
 
                 cv2.drawMarker(xx, [int(cx), int(cy)], [0, 0, 0], cv2.MARKER_STAR, thickness=4)
                 cv2.line(xx, [int(cx), int(cy)], np.int32(point_ant[0][::-1]), [255, 128, 128], 1)
