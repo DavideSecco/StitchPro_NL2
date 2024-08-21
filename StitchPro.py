@@ -285,8 +285,8 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
 
         from scipy.optimize import NonlinearConstraint
         from scipy import optimize
-
-        POP_SIZE = 10
+        # Inizialmente POP_SIZE era 10
+        POP_SIZE = 50
 
         data_dict = []
 
@@ -364,10 +364,11 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             points_out = np.stack(np.where(x_out > 0), axis=1)
             # print(points_out.shape)
 
-            pad = np.maximum(int(M * 0.1), 100)
+            # initially it was int(M*0.1)
+            pad = np.maximum(int(M * 0.4), 100)
 
             # initialization has inside the coordinates of the
-            initializations = []
+            # initializations = []
 
             # qui ho cambiato le inizializzazioni
             # for init_x in [0, Mx]:
@@ -387,19 +388,29 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             # curr_theta -np.pi/8 = -9/8*pi
             # curr_theta + extra_theta = pi
             # segment angle is the angle of the n quadrants (e.g. if 4 quadrants, segment angle is 2*pi/4)
-            bounds = [(0, M), (0, M), (0, M), (0, M),
-                      (curr_theta - np.pi / 8, curr_theta + extra_theta),
-                      (segment_angle * 0.8, segment_angle * 1.2)]
+            # Delta rappresenta quanto vuoi permettere al centro di muoversi rispetto alla posizione iniziale
+            delta = 20
+            initial_cx, initial_cy = initializations[i]
+
+            bounds = [
+                (max(0, initial_cx - delta), min(M, initial_cx + delta)),  # Limita cx vicino a initial_cx
+                (max(0, initial_cy - delta), min(M, initial_cy + delta)),  # Limita cy vicino a initial_cy
+                (M / 4, M / 2),  # Semiasse r1 (può essere più ristretto se necessario)
+                (M / 4, M / 2),  # Semiasse r2 (può essere più ristretto se necessario)
+                (curr_theta - np.pi / 8, curr_theta + extra_theta),  # Angolo iniziale
+                (segment_angle * 0.8, segment_angle * 1.2)  # Ampiezza dell'arco
+            ]
+
             x0 = [initializations[i][0], initializations[i][1], M / 2, M / 2,
                   curr_theta, segment_angle]
 
             # differential_evolution optimizes a properly defined loss function (see circle_arc_loss_cv
             # implementation
 
-            # MAXITER WAS SET TO 250 originally
+            # MAXITER WAS SET TO 250 originally and workers was set to 1
             solution = optimize.differential_evolution(
                 circle_arc_loss_cv, x0=x0, bounds=bounds,
-                args=[x, pad], popsize=POP_SIZE, maxiter=250, workers=1)  # updating='immediate'
+                args=[x, pad], popsize=POP_SIZE, maxiter=500, workers=1)  # updating='immediate'
             solutions.append(solution)
             # print('\n', solution)
             # solution.x is the array of parameter of the optimized solution
