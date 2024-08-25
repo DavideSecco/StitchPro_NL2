@@ -3,8 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy import optimize
 from PIL import Image
-
-
+import os
+import pathlib as p
 
 
 
@@ -45,24 +45,31 @@ def circle_arc_loss_cv(par, mask, pad=1500, save=False, name='best_ellipse_solut
     return 1 - I / U + fn / mask.sum()
 
 
+
+# caricamento immagine e conversione RGBA -> binary
 path_to_mask = "C:/Users/dicia/NL2_project/debugging_series/debug5/upper_right/upper_right_debugging_x_contours.png"
 x, pil_img = load_image_as_array(path_to_mask)
 
 image_gray = pil_img.convert('L')
 x = np.array(image_gray)
-x = np.where(x > 200, 1, 0)
+x = np.where(x > 200, 1, 0).astype(np.uint8)
 
 Mx, My = x.shape
 M = min(Mx, My)
 
-# Parametri per le perturbazioni
+
+# inizializzazione costanti
+N_SEGMENTS = 4
+
+# Inizializzazioni variabili e parametri per le perturbazioni
 delta = 20  # Raggio di variazione per cx e cy
 theta_delta = np.pi / 16  # Raggio di variazione per gli angoli
-
-# Inizializzazioni variabili
-
+curr_theta = 0  # angolo di partenza dell'ellisse
+segment_angle = 2 * np.pi - 2*np.pi / N_SEGMENTS  # angolo spaziato dal frammento (nel caso di 4 frammenti è 90 gradi)
 i = 0
 
+
+# inizializzazione delle coordinate dei 4 centri
 initialization_centre = [
     (0, My),
     (0, 0),
@@ -74,34 +81,32 @@ initializations = []
 # Numero di inizializzazioni da generare
 num_initializations = 10
 
-curr_theta = 0
-segment_angle = 0
 
 for _ in range(num_initializations):
     # Genera cx e cy intorno ai valori iniziali
-    perturbed_cx = np.clip(initialization_centre[i][0] + np.random.uniform(-delta, delta), 0, M)
-    perturbed_cy = np.clip(initialization_centre[i][1] + np.random.uniform(-delta, delta), 0, M)
+    perturbed_cx = np.clip(initialization_centre[i][0] + np.random.uniform(-delta, delta), a_min=0, a_max=Mx)
+    perturbed_cy = np.clip(initialization_centre[i][1] + np.random.uniform(-delta, delta), a_min=0, a_max=My)
 
     # Genera angoli theta intorno ai valori iniziali
     perturbed_theta_1 = curr_theta + np.random.uniform(-theta_delta, theta_delta)
     perturbed_segment_angle = segment_angle + np.random.uniform(-theta_delta, theta_delta)
 
-    # Aggiungi l'inizializzazione perturbata alla lista
+    # Aggiunge l'inizializzazione perturbata alla lista
     initializations.append((perturbed_cx, perturbed_cy, perturbed_theta_1, perturbed_segment_angle))
 
-# Per ogni inizializzazione, esegui l'ottimizzazione
+# Per ogni inizializzazione esegue l'ottimizzazione
 solutions = []
 for init in initializations:
     print("Trying initialization for segment {}: {}".format(i, init))
 
     # Definisci bounds per ogni inizializzazione
     bounds = [
-        (max(0, init[0] - delta), min(M, init[0] + delta)),  # Limita cx vicino a init[0]
-        (max(0, init[1] - delta), min(M, init[1] + delta)),  # Limita cy vicino a init[1]
-        (M / 4, M / 2),  # Semiasse r1 (può essere più ristretto se necessario)
-        (M / 4, M / 2),  # Semiasse r2 (può essere più ristretto se necessario)
+        (max(0, init[0] - delta), min(Mx, init[0] + delta)),  # Limita cx vicino a init[0]
+        (max(0, init[1] - delta), min(My, init[1] + delta)),  # Limita cy vicino a init[1]
+        (Mx / 4, Mx),  # Semiasse r1 (può essere più ristretto se necessario)
+        (My / 4, My),  # Semiasse r2 (può essere più ristretto se necessario)
         (init[2] - theta_delta, init[2] + theta_delta),  # Angolo iniziale limitato intorno a init[2]
-        (init[3] * 0.8, init[3] * 1.2)  # Ampiezza dell'arco limitata
+        (init[3] * 0.6, init[3] * 1.4)  # Ampiezza dell'arco limitata
     ]
 
     # Valore iniziale per l'ottimizzazione
@@ -111,9 +116,23 @@ for init in initializations:
     # Esegui l'ottimizzazione
     solution = optimize.differential_evolution(
         circle_arc_loss_cv, bounds=bounds, args=[x, pad], x0=x0,
-        popsize=50, maxiter=500, workers=1, updating='immediate'
+        popsize=30, maxiter=250, workers=1
     )
 
     solutions.append(solution)
+
+
+
+new_save_dir = "salvataggio"
+debug_this = True
+if debug_this:
+    try:
+        os.makedirs(new_save_dir, exist_ok=True)
+        print(f"Cartella '{new_save_dir}' creata con successo")
+    except OSError as e:
+        print(f"Errore nella creazione della cartella: {e}")
+os.chdir(new_save_dir)
+for y, sol in enumerate(solutions):
+    circle_arc_loss_cv(sol.x, x, pad, save=True, name=f'img_{y}')
 
 
