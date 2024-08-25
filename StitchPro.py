@@ -318,6 +318,10 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             # create folder
             save_dir = os.path.join(root_folder, 'debug', files[i])
 
+
+
+
+
             try:
                 os.makedirs(save_dir, exist_ok=True)
                 print(f"Cartella '{save_dir}' creata con successo")
@@ -329,15 +333,16 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             plt.imshow(x_out, cmap='gray')
             plt.savefig(os.path.join(save_dir, f'{files[i]}_tissue_mask_closed.png'))
 
+
+
+
+
             # Trova il contorno e lo restituisce sotto forma di tupla in cui ogni elemento contiene il contorno,
             # 'RETR_EXTERNAL' permette di avere il contorno più esterno (quello della figura in teoria) in c[0]
             c = cv2.findContours(x, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)[0]
-
-            # print('numero di contorni trovati: ', len(c))  # DEBUGGING
-            # print('contorno utilizzato: ', c[0].shape)
-
             x = np.zeros_like(x)
             Mx, My = x.shape
+
 
             # print('n.ro pixel immagine binaria: ', Mx, My)
 
@@ -395,8 +400,8 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             bounds = [
                 (max(0, initial_cx - delta), min(M, initial_cx + delta)),  # Limita cx vicino a initial_cx
                 (max(0, initial_cy - delta), min(M, initial_cy + delta)),  # Limita cy vicino a initial_cy
-                (M / 4, M / 2),  # Semiasse r1 (può essere più ristretto se necessario)
-                (M / 4, M / 2),  # Semiasse r2 (può essere più ristretto se necessario)
+                (M / 4, 3*M / 4),  # Semiasse r1 (può essere più ristretto se necessario)
+                (M / 4, 3*M / 4),  # Semiasse r2 (può essere più ristretto se necessario)
                 (curr_theta - np.pi / 8, curr_theta + extra_theta),  # Angolo iniziale
                 (segment_angle * 0.8, segment_angle * 1.2)  # Ampiezza dell'arco
             ]
