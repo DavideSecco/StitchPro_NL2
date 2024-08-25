@@ -56,15 +56,14 @@ def get_hull(src_gray, show=False):
     # Calcola e disegna l'hull convesso per ogni contorno trovato
     for contour in contours:
         hull = cv.convexHull(contour)
-        cv.drawContours(hull_image, [hull], 0, (255, 255), thickness=cv.FILLED)
+        cv.drawContours(hull_image, [hull], 0, 255, thickness=cv.FILLED)
 
-        print(hull_image.shape)
     if show:
         plt.imshow(hull_image, cmap='gray')
-
         plt.show()
 
     return hull_image
+
 
 
 def main(argv):
@@ -74,7 +73,7 @@ def main(argv):
     filename = argv[0] if len(argv) > 0 else default_file
     src = load_and_preprocess(filename, scale_factor=3, show=True)
 
-    hull_img = get_hull(src, show=True)
+    # src = get_hull(src, show=True) non ancora pronto
 
     # Check if image is loaded fine
     if src is None:
@@ -82,7 +81,7 @@ def main(argv):
         print('Usage: hough_lines.py [image_name -- default ' + default_file + '] \n')
         return -1
 
-    dst = cv.Canny(hull_img, 50, 200, None, 3)
+    dst = cv.Canny(src, 50, 200, None, 3)
 
     # Copy edges to the images that will display the results in BGR
     cdst = cv.cvtColor(dst, cv.COLOR_GRAY2BGR)
