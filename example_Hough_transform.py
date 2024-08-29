@@ -49,14 +49,15 @@ def load_and_preprocess(img_path, show=False, scale_factor=1):
 def get_hull(src_gray, show=False):
     # Trova i contorni nell'immagine in scala di grigi
     contours, _ = cv.findContours(src_gray, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+    contours = max(contours, key=cv.contourArea)
 
     # Crea un'immagine vuota per disegnare l'hull convesso
-    hull_image = np.zeros_like(src_gray)
+    hull_image = np.zeros_like(src_gray).astype(np.uint8)
 
     # Calcola e disegna l'hull convesso per ogni contorno trovato
     for contour in contours:
         hull = cv.convexHull(contour)
-        cv.drawContours(hull_image, [hull], 0, 255, thickness=cv.FILLED)
+        cv.drawContours(hull_image, [hull], -1, (0, 255, 0), thickness=cv.FILLED)
 
     if show:
         plt.imshow(hull_image, cmap='gray')
@@ -65,15 +66,12 @@ def get_hull(src_gray, show=False):
     return hull_image
 
 
-
 def main(argv):
-
     default_file = r"C:\Users\dicia\NL2_project\datasets\test-data\ur.tif"
     default_file = "../bottom_left.tif"
     filename = argv[0] if len(argv) > 0 else default_file
     src = load_and_preprocess(filename, scale_factor=3, show=True)
 
-    # src = get_hull(src, show=True) non ancora pronto
 
     # Check if image is loaded fine
     if src is None:
@@ -82,6 +80,8 @@ def main(argv):
         return -1
 
     dst = cv.Canny(src, 50, 200, None, 3)
+    cv.imshow("canny img", dst)
+    # dst = get_hull(src, show=True)  # non ancora pronto
 
     # Copy edges to the images that will display the results in BGR
     cdst = cv.cvtColor(dst, cv.COLOR_GRAY2BGR)
