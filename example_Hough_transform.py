@@ -1,6 +1,7 @@
 import sys
 import math
 import cv2 as cv
+import matplotlib.pyplot as plt
 import numpy as np
 
 
@@ -17,9 +18,9 @@ def hough_transform(img, show=False, save=False):
     :param save:
     :return:
     """
-    cdst = cv.cvtColor(img, cv.COLOR_GRAY2BGR)
-    cdstP = np.copy(cdst)
-
+    if len(img.shape) == 2:
+        cdst = cv.cvtColor(img, cv.COLOR_GRAY2BGR)
+        cdstP = np.copy(cdst)
 
     lines = cv.HoughLines(img, 1, np.pi / 180, 150, None, 0, 0)
 
@@ -61,9 +62,27 @@ def main(argv):
     default_file = "../bottom_left.tif"
     filename = argv[0] if len(argv) > 0 else default_file
 
-
     prep = Preprocessing(filename)
-    processed_img = prep.preprocess_image(show_steps=True)
+    original_img = prep.original_image
+    print(original_img.shape)
+
+    plt.imshow(original_img)
+    plt.show()
+
+
+
+    processed_img = prep.preprocess_image(show_steps=True,
+                                          median_filter_size=30,
+                                          closing_footprint_size=60,
+                                          apply_hull_image=False)
+
+    # serve perché l'edge detection fatta con Canny restituisce un'immagine di tipo bool
+    processed_img = processed_img.astype(np.uint8) * 255
+
+    # debugging
+    print(np.unique(processed_img))
+    print(processed_img.shape)
+    print(processed_img.dtype)
 
     hough_transform(processed_img, show=True)
 

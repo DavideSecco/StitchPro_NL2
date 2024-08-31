@@ -18,7 +18,7 @@ class Preprocessing:
     def show_images(self, *images, figure_title):
         n_img = len(images)
         fig, ax = plt.subplots(math.ceil(n_img / 4), n_img % 4 if n_img < 4 else 4, figsize=(10, 10))
-        fig.suptitle(figure_title, fontsize=16)  # Aggiungi il titolo per l'intera figura
+        fig.suptitle(figure_title, fontsize=16)
         ax = ax.flatten()
         for n, i in enumerate(images):
             ax[n].imshow(i, cmap='gray')
@@ -28,10 +28,15 @@ class Preprocessing:
         otsu_threshold = threshold_otsu(self.processed_image)
         return otsu_threshold
 
-    def rescale_img(self, dtype=np.uint8, show=False):
-        self.processed_image = rescale(self.original_image, 0.25, channel_axis=2, preserve_range=True).astype(dtype)
+    def rescale_img(self, dtype=np.uint8, scaling_factor=0.25, show=False):
+
+        self.processed_image = rescale(self.original_image, scaling_factor, channel_axis=2, preserve_range=True).astype(dtype)
         if show:
-            self.show_images(self.original_image, self.processed_image, 'Rescaling')
+            self.show_images(self.original_image, self.processed_image, figure_title='Rescaling')
+            new_shape = self.processed_image.shape
+            original_shape = self.original_image.shape
+
+            print(f"Original shape: {original_shape}, Rescaled shape: {new_shape}")
         return self.processed_image
 
     def grayscale_transform(self, show=False):
@@ -109,7 +114,10 @@ class Preprocessing:
 
     def preprocess_image(self, threshold=None, median_filter_size=20, closing_footprint_size=20, edge_sigma=15,
                          apply_grayscale=True, apply_threshold=True, apply_median_filter=True,
-                         apply_binary_closing=True, apply_edge_detection=True, show_steps=False):
+                         apply_binary_closing=True, apply_edge_detection=True, apply_hull_image=True,
+                         rescale_img=True, scaling_factor=0.25, show_steps=False):
+        if rescale_img:
+            self.rescale_img(scaling_factor=scaling_factor, show=show_steps)
         if apply_grayscale:
             self.grayscale_transform(show=show_steps)
         if apply_threshold:
@@ -121,8 +129,9 @@ class Preprocessing:
             self.binary_closing_image(footprint_size=closing_footprint_size, show=show_steps)
         if apply_edge_detection:
             self.edge_detection(sigma=edge_sigma, show=show_steps)
-        filled_image = self.contours_and_hulls(show=show_steps)
-        return filled_image
+        if apply_hull_image:
+            self.processed_image = self.contours_and_hulls(show=show_steps)
+        return self.processed_image
 
 
 
