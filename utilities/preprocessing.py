@@ -40,7 +40,7 @@ class Preprocessing:
         return self.processed_image
 
     def grayscale_transform(self, show=False):
-        self.processed_image = color.rgb2gray(self.original_image)
+        self.processed_image = color.rgb2gray(self.processed_image)
         self.processed_image = (np.round(self.processed_image * 255)).astype(np.uint8)
         if show:
             fig, ax = plt.subplots(1, 2)
@@ -63,6 +63,7 @@ class Preprocessing:
         threshold = self.find_best_threshold_otsu() if threshold is None else threshold
         self.processed_image = self.processed_image < threshold
         if show:
+            print(f'Applied threshold: {threshold}')
             fig, ax = plt.subplots(1, 2)
             fig.suptitle('Thresholding', fontsize=16)
             ax[0].imshow(self.original_image, cmap='gray')
