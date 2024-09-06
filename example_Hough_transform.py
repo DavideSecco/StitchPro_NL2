@@ -1,5 +1,6 @@
 import sys
 import math
+import os
 import cv2 as cv
 import matplotlib.pyplot as plt
 import numpy as np
@@ -11,7 +12,7 @@ from skimage import data
 from utilities import Preprocessing
 
 
-def hough_transform(img, show=False, save=False):
+def hough_transform(img, save_dir, show=False):
     """
     Funzione che applica la trasformata di Hough su un immagine binaria, restituisce le immagini con sopra evidenziate
     le linee dritte trovate con la trasformata di Hough e la trasformata di Hough probabilistica
@@ -26,7 +27,6 @@ def hough_transform(img, show=False, save=False):
         cdstP = np.copy(cdst)
 
     lines = cv.HoughLines(img, 1, np.pi / 180, 150, None, 0, 0)
-
 
     if lines is not None:
         for i in range(0, len(lines)):
@@ -43,10 +43,9 @@ def hough_transform(img, show=False, save=False):
                 pt2 = (int(x0 - 1000 * (-b)), int(y0 - 2000 * (a)))
                 cv.line(cdst, pt1, pt2, (0, 0, 255), 3, cv.LINE_AA)
                 draw_vertex_lines(cdst, x0, y0, a, b)
-
     else:
-        raise ValueError("Nessuna linea trovata")
-
+        # raise ValueError("Nessuna linea trovata")
+        print("Nessuna linea trovata")
 
     linesP = cv.HoughLinesP(img, 1, np.pi / 180, 50, None, 50, 10)
 
@@ -60,24 +59,71 @@ def hough_transform(img, show=False, save=False):
                 cv.line(cdstP, (l[0], l[1]), (l[2], l[3]), (0, 0, 255), 3, cv.LINE_AA)
 
     if show:
-        cv.imshow("Source", img)
-        cv.imshow("Detected Lines (in red) - Standard Hough Line Transform", cdst)
-        cv.imshow("Detected Lines (in red) - Probabilistic Line Transform", cdstP)
+        # cv.imshow("Source", img)
+        # cv.imshow("Detected Lines (in red) - Standard Hough Line Transform", cdst)
+        # cv.imshow("Detected Lines (in red) - Probabilistic Line Transform", cdstP)
 
-    cv.waitKey()
+        plt.figure(figsize=(15, 5))  # Imposta la dimensione della figura (opzionale)
+
+        # Prima immagine
+        plt.subplot(1, 3, 1)  # (1 riga, 3 colonne, 1ª posizione)
+        plt.imshow(img, cmap='gray')
+        plt.axis('off')
+        plt.title("Source")
+
+        # Seconda immagine
+        plt.subplot(1, 3, 2)  # (1 riga, 3 colonne, 2ª posizione)
+        plt.imshow(cdst, cmap='gray')
+        plt.axis('off')
+        plt.title("Detected Lines (in red) - Standard Hough Line Transform")
+
+        # Terza immagine
+        plt.subplot(1, 3, 3)  # (1 riga, 3 colonne, 3ª posizione)
+        plt.imshow(cdstP, cmap='gray')
+        plt.axis('off')
+        plt.title("Detected Lines (in red) - Probabilistic Line Transform")
+
+        plt.suptitle("Final result for hough_transform", fontsize=16)
+
+        # Optimize layout and show the images
+        plt.tight_layout(rect=[0, 0, 1, 0.95])  # Adjust layout to make space for suptitle
+
+        plt.savefig(save_dir + 'hough_standard.png', dpi=300)
+
+        plt.show()
+
+    # cv.waitKey()
     return 0
 
 
 
-def hough_transform_skimage_implementation(image):
+def hough_transform_skimage_implementation(image, save_dir):
     # image = np.zeros((200, 200))
     # idx = np.arange(25, 175)
     # image[idx, idx] = 255
     # image[draw_line(45, 25, 25, 175)] = 255
     # image[draw_line(25, 135, 175, 155)] = 255
 
+    # Create of an array of angles from -90° to 90°, divided in 360 steps.
+    # These are the tested angles in hough transformation.
     tested_angles = np.linspace(-np.pi / 2, np.pi / 2, 360, endpoint=False)
+
+    # h: La matrice di accumulo della Trasformata di Hough.
+    # theta: Gli angoli testati in radianti.
+    # d: Le distanze dalla linea centrale.
     h, theta, d = hough_line(image, theta=tested_angles)
+
+    # Trova i picchi nella trasformata di Hough
+    peaks = hough_line_peaks(h, theta, d)
+    print("peaks: ", peaks)
+
+    # Estrai le linee rilevate
+    lines = []
+    for _, angle, dist in zip(*peaks):
+        x0, y0 = dist * np.array([np.cos(angle), np.sin(angle)])
+        slope = np.tan(angle + np.pi / 2)
+        lines.append((x0, y0, slope))
+
     # Generating figure 1
     fig, axes = plt.subplots(1, 3, figsize=(15, 6))
     ax = axes.ravel()
@@ -102,17 +148,25 @@ def hough_transform_skimage_implementation(image):
 
     ax[2].imshow(image, cmap='gray')
     ax[2].set_ylim((image.shape[0], 0))
-    ax[2].set_axis_off()
+    # ax[2].set_axis_off()
     ax[2].set_title('Detected lines')
 
-    for _, angle, dist in zip(*hough_line_peaks(h, theta, d)):
-        (x0, y0) = dist * np.array([np.cos(angle), np.sin(angle)])
-        ax[2].axline((x0, y0), slope=np.tan(angle + np.pi / 2))
+    colors = ["red", "green", "purple", "orange", "yellow"]
+    # Disegna le linee e aggiungi etichette
+    for idx, (x0, y0, slope) in enumerate(lines, start=0):
+        ax[2].axline((x0, y0), slope=slope, color=colors[idx % len(colors)])
+        # Aggiungi il numero della linea vicino a (x0, y0)
+        ax[2].text(x0, y0, f"Line {idx}", color=colors[idx % len(colors)], fontsize=12, verticalalignment='top', horizontalalignment='right')
+
+
+    plt.suptitle("Final result for hough_transform_skimage", fontsize=16)
 
     plt.tight_layout()
+
+    plt.savefig(save_dir + 'hough_skimage.png', dpi=300)
     plt.show()
 
-    pass
+    return lines
 
 
 def draw_vertex_lines(img, x0, y0, a, b):
@@ -129,16 +183,40 @@ def draw_vertex_lines(img, x0, y0, a, b):
 
 
 def main(argv):
-    default_file = "../bottom_left.tif"
-    filename = argv[0] if len(argv) > 0 else default_file
+    # Validate the file path
+    try:
+        # Check if the file path exists
+        if not os.path.exists(argv[0]):
+            raise FileNotFoundError(f"The file at path '{args.input_path}' does not exist.")
 
-    prep = Preprocessing(filename)
-    original_img = prep.original_image
+        # Check if it is a file (not a directory)
+        if not os.path.isfile(argv[0]):
+            raise IsADirectoryError(f"The path '{args.input_path}' is not a file.")
 
-    plt.imshow(original_img)
+    except FileNotFoundError as e:
+        print(e)
+    except IsADirectoryError as e:
+        print(e)
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+
+    file_path = argv[0]
+
+    # Ottieni il nome del file senza estensione
+    file_name = os.path.splitext(os.path.basename(file_path))[0]
+    print("Name of the file: ", file_name)
+
+    # Setto il nome della cartella dove salvare i risultati
+    save_dir = "./hough_trasform_results/" + file_name + '/'
+
+    # Crea la cartella, inclusi i genitori se non esistono
+    os.makedirs(save_dir, exist_ok=True)
+
+
+    # PreProcessing of the image and visulization
+    prep = Preprocessing(file_path)
+    plt.imshow(prep.original_image)
     plt.show()
-
-
 
     processed_img = prep.preprocess_image(show_steps=False,
                                           median_filter_size=30,
@@ -153,8 +231,13 @@ def main(argv):
     # print(processed_img.shape)
     # print(processed_img.dtype)
 
-    hough_transform(processed_img, show=True)
-    hough_transform_skimage_implementation(processed_img)  # funziona molto meglio
+    # Trasformation throgh hough
+
+    hough_transform(processed_img, save_dir=save_dir, show=True)
+    lines = hough_transform_skimage_implementation(processed_img, save_dir=save_dir)  # funziona molto meglio
+
+    # Linee ritornate in formato: ((x0, y0), slope)
+    print("linee trovate: ", len(lines), lines)
 
     return 0
 
