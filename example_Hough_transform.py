@@ -154,7 +154,7 @@ def hough_transform_skimage_implementation(image, save_dir):
     colors = ["red", "green", "purple", "orange", "yellow"]
     # Disegna le linee e aggiungi etichette
     for idx, (x0, y0, slope) in enumerate(lines, start=0):
-        ax[2].axline((x0, y0), slope=slope, color=colors[idx % len(colors)])
+        ax[2].axline((x0, y0), slope=slope, color=colors[idx % len(colors)], linewidth=5/(1+idx))
         # Aggiungi il numero della linea vicino a (x0, y0)
         ax[2].text(x0, y0, f"Line {idx}", color=colors[idx % len(colors)], fontsize=12, verticalalignment='top', horizontalalignment='right')
 
