@@ -415,7 +415,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             # MAXITER WAS SET TO 250 originally and workers was set to 1
             solution = optimize.differential_evolution(
                 circle_arc_loss_cv, x0=x0, bounds=bounds,
-                args=[x, pad], popsize=POP_SIZE, maxiter=500, workers=1)  # updating='immediate'
+                args=[x, pad], popsize=POP_SIZE, maxiter=500, workers=1, seed=42)  # updating='immediate'
             solutions.append(solution)
             # print('\n', solution)
             # solution.x is the array of parameter of the optimized solution
