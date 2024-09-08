@@ -91,6 +91,8 @@ def find_points(binary_image):
     print('point_ant: ', point_ant)
     print(border_points.shape)
 
+    return ant_points
+
 
 def main(args):
 
@@ -108,7 +110,9 @@ def main(args):
     # immagine binaria ad 8 bit
     processed_img = processed_img.astype(np.uint8) * 255
 
-    find_points(processed_img)
+    points = find_points(processed_img)
+
+    print(points)
 
 
 if __name__ == "__main__":
