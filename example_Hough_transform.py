@@ -115,56 +115,64 @@ def hough_transform_skimage_implementation(image, save_dir):
 
     # Trova i picchi nella trasformata di Hough
     peaks = hough_line_peaks(h, theta, d)
-    print("peaks: ", peaks)
+    # print("peaks: ", peaks)
 
     # Estrai le linee rilevate
     lines = []
     for _, angle, dist in zip(*peaks):
         x0, y0 = dist * np.array([np.cos(angle), np.sin(angle)])
-        slope = np.tan(angle + np.pi / 2)
+        # Se angle è diverso da 0, calcola la pendenza come np.tan(angle + np.pi / 2)
+        # Altrimenti imposta slope a np.inf
+        if angle != 0:
+            slope = np.tan(angle + np.pi / 2)
+        else:
+            slope = np.inf
         lines.append((x0, y0, slope))
 
-    # Generating figure 1
-    fig, axes = plt.subplots(1, 3, figsize=(15, 6))
-    ax = axes.ravel()
+    debug = False
+    
+    if debug:
+        # Generating figure 1
+        fig, axes = plt.subplots(1, 3, figsize=(15, 6))
+        ax = axes.ravel()
 
-    ax[0].imshow(image, cmap='gray')
-    ax[0].set_title('Input image')
-    ax[0].set_axis_off()
+        ax[0].imshow(image, cmap='gray')
+        ax[0].set_title('Input image')
+        ax[0].set_axis_off()
 
-    angle_step = 0.5 * np.diff(theta).mean()
-    d_step = 0.5 * np.diff(d).mean()
-    bounds = [
-        np.rad2deg(theta[0] - angle_step),
-        np.rad2deg(theta[-1] + angle_step),
-        d[-1] + d_step,
-        d[0] - d_step,
-    ]
-    ax[1].imshow(np.log(1 + h), extent=bounds, cmap='gray', aspect=1 / 1.5)
-    ax[1].set_title('Hough transform')
-    ax[1].set_xlabel('Angles (degrees)')
-    ax[1].set_ylabel('Distance (pixels)')
-    ax[1].axis('image')
+        angle_step = 0.5 * np.diff(theta).mean()
+        d_step = 0.5 * np.diff(d).mean()
+        bounds = [
+            np.rad2deg(theta[0] - angle_step),
+            np.rad2deg(theta[-1] + angle_step),
+            d[-1] + d_step,
+            d[0] - d_step,
+        ]
+        ax[1].imshow(np.log(1 + h), extent=bounds, cmap='gray', aspect=1 / 1.5)
+        ax[1].set_title('Hough transform')
+        ax[1].set_xlabel('Angles (degrees)')
+        ax[1].set_ylabel('Distance (pixels)')
+        ax[1].axis('image')
 
-    ax[2].imshow(image, cmap='gray')
-    ax[2].set_ylim((image.shape[0], 0))
-    # ax[2].set_axis_off()
-    ax[2].set_title('Detected lines')
+        ax[2].imshow(image, cmap='gray')
+        ax[2].set_ylim((image.shape[0], 0))
+        # ax[2].set_axis_off()
+        ax[2].set_title('Detected lines')
 
-    colors = ["red", "green", "purple", "orange", "yellow"]
-    # Disegna le linee e aggiungi etichette
-    for idx, (x0, y0, slope) in enumerate(lines, start=0):
-        ax[2].axline((x0, y0), slope=slope, color=colors[idx % len(colors)], linewidth=5/(1+idx))
-        # Aggiungi il numero della linea vicino a (x0, y0)
-        ax[2].text(x0, y0, f"Line {idx}", color=colors[idx % len(colors)], fontsize=12, verticalalignment='top', horizontalalignment='right')
+        colors = ["red", "green", "purple", "orange", "yellow"]
+        # Disegna le linee e aggiungi etichette
+        for idx, (x0, y0, slope) in enumerate(lines, start=0):
+            ax[2].axline((x0, y0), slope=slope, color=colors[idx % len(colors)], linewidth=5/(1+idx))
+            # Aggiungi il numero della linea vicino a (x0, y0)
+            ax[2].text(x0, y0, f"Line {idx}", color=colors[idx % len(colors)], fontsize=12, verticalalignment='top', horizontalalignment='right')
 
 
-    plt.suptitle("Final result for hough_transform_skimage", fontsize=16)
+        plt.suptitle("Final result for hough_transform_skimage", fontsize=16)
 
-    plt.tight_layout()
+        plt.tight_layout()
 
-    plt.savefig(save_dir + 'hough_skimage.png', dpi=300)
-    plt.show()
+        plt.savefig(save_dir + 'hough_skimage.png', dpi=300)
+        plt.show()
 
     return lines
 
@@ -182,21 +190,78 @@ def draw_vertex_lines(img, x0, y0, a, b):
     plt.show()
 
 
+### Non necessaria
+def extract_line_pixels(image, lines):
+    # Create an empty mask to store the line pixels
+    line_pixels = np.zeros(image.shape, dtype=np.uint8)
+
+    print(image.shape)
+
+    for x0, y0, slope in lines:
+        # Generate coordinates along the line
+        if slope == np.inf or slope > 10^12:  # Vertical line case
+            x = np.full(image.shape[0], x0)
+            # y = y0
+            y = np.arange(image.shape[0])
+        else:
+            x = np.arange(image.shape[1])
+            y = slope * (x - x0) + y0
+
+        # Ensure coordinates are within image bounds
+        valid = (x >= 0) & (x < image.shape[1]) & (y >= 0) & (y < image.shape[0])
+        x_valid = x[valid].astype(int)
+        y_valid = y[valid].astype(int)
+
+        # Update the mask
+        line_pixels[y_valid, x_valid] = 1
+
+    return line_pixels
+
+
+def calculate_extreme_points(lines, image_shape):
+    extreme_points = []
+    height, width = image_shape
+
+    # Calcola i punti estremi per ogni linea
+    for (x0, y0, slope) in lines:
+        if slope == np.inf:  # Caso linea verticale
+            # La linea è verticale, quindi x è costante (x0) e y varia dall'inizio alla fine dell'immagine
+            x1 = x0
+            y1 = 0  # Intersezione con il bordo superiore
+            x2 = x0
+            y2 = height  # Intersezione con il bordo inferiore
+        else:
+            # Calcola le coordinate dei punti estremi per linee non verticali
+            x1 = 0
+            y1 = int(y0 - slope * x0)  # Intersezione con y all'inizio dell'immagine (x=0)
+
+            x2 = width
+            y2 = int(y0 + slope * (x2 - x0))  # Intersezione con y alla fine dell'immagine (x=width)
+
+        # Aggiungi le coordinate calcolate come punti estremi
+        extreme_points.append([(x1, y1), (x2, y2)])
+
+    return extreme_points
+
+
 def main(argv):
     # Validate the file path
     try:
+        # Check id a path has been inserted
+        if len(argv) == 0:
+            raise IndexError("Must insert a valid file path")
+
         # Check if the file path exists
         if not os.path.exists(argv[0]):
-            raise FileNotFoundError(f"The file at path '{args.input_path}' does not exist.")
+            raise FileNotFoundError(f"The file at path '{argv.input_path}' does not exist.")
 
         # Check if it is a file (not a directory)
         if not os.path.isfile(argv[0]):
-            raise IsADirectoryError(f"The path '{args.input_path}' is not a file.")
+            raise IsADirectoryError(f"The path '{argv.input_path}' is not a file.")
 
-    except FileNotFoundError as e:
+    except (FileNotFoundError, IsADirectoryError, IndexError) as e:
         print(e)
-    except IsADirectoryError as e:
-        print(e)
+        sys.exit(1)
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
 
@@ -238,6 +303,27 @@ def main(argv):
 
     # Linee ritornate in formato: ((x0, y0), slope)
     print("linee trovate: ", len(lines), lines)
+
+    extreme_points = calculate_extreme_points(lines, processed_img.shape)
+    print(extreme_points)
+
+    line_pixels = extract_line_pixels(processed_img, lines)
+    print(line_pixels)
+
+    # Plot the results
+    fig, ax = plt.subplots(1, 2, figsize=(12, 6))
+
+    ax[0].imshow(processed_img, cmap='gray')
+    ax[0].set_title('Input image')
+    ax[0].set_axis_off()
+
+    ax[1].imshow(line_pixels, cmap='gray')
+    ax[1].set_title('Binary mask of detected lines')
+    ax[1].set_axis_off()
+
+    plt.tight_layout()
+    # plt.savefig(save_dir + 'line_pixels_binary.png', dpi=300)
+    plt.show()
 
     return 0
 
