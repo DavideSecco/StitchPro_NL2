@@ -457,6 +457,10 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             theta_1_, theta_2_ = np.rad2deg([theta_1, theta_2])
             O = images[i].copy()
 
+            ##########################
+            ####### Punti ant ########
+
+
             # retrieve points from extremal landmarks
             r_ant = radius_at_angle(theta_1, r1, r2)
 
@@ -471,12 +475,22 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             point_ant = points_out[
                 np.argmin(cdist(points_out, pca_sorted), axis=0)]
 
+            ##########################
+
+            ##########################
+            ####### Punti pos ########
+
             # same as points_cart_ant but for angle theta_2 (see saved image for explaination)
             r_pos = radius_at_angle(theta_2, r1, r2)
             points_cart_pos = np.array([pol2cart(r_pos, theta_2)]) + [cx, cy]
             pcp_sorted = np.array([points_cart_pos[0][::-1]])
             point_pos = points_out[
                 np.argmin(cdist(points_out, pcp_sorted[::-1]), axis=0)]
+
+            ##########################
+
+            ##########################
+            ####### Punti ant ######## sembra, ma nell'ultima iscruzione li chimata pos
 
             # retrieve points for histogram
             ant_axis_line_mask = np.zeros_like(x, dtype=np.uint8)
@@ -486,7 +500,8 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             pos_points = np.roll(
                 np.array(np.where(ant_axis_line_mask * x_out)).T, 1, 1)
 
-
+            ##########################
+            ####### Punti pos ######## sembra, ma nell'ultima iscruzione li chimata ant
 
             pos_axis_line_mask = np.zeros_like(x, dtype=np.uint8)
             cv2.line(pos_axis_line_mask, [int(cx), int(cy)],
