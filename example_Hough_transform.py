@@ -130,7 +130,7 @@ def hough_transform_skimage_implementation(image, save_dir):
         lines.append((x0, y0, slope))
 
     debug = False
-    
+
     if debug:
         # Generating figure 1
         fig, axes = plt.subplots(1, 3, figsize=(15, 6))
@@ -173,6 +173,8 @@ def hough_transform_skimage_implementation(image, save_dir):
 
         plt.savefig(save_dir + 'hough_skimage.png', dpi=300)
         plt.show()
+
+        return lines,
 
     return lines
 
@@ -226,9 +228,9 @@ def calculate_extreme_points(lines, image_shape):
     for (x0, y0, slope) in lines:
         if slope == np.inf:  # Caso linea verticale
             # La linea è verticale, quindi x è costante (x0) e y varia dall'inizio alla fine dell'immagine
-            x1 = x0
+            x1 = int(x0)
             y1 = 0  # Intersezione con il bordo superiore
-            x2 = x0
+            x2 = int(x0)
             y2 = height  # Intersezione con il bordo inferiore
         else:
             # Calcola le coordinate dei punti estremi per linee non verticali
@@ -305,24 +307,71 @@ def main(argv):
     print("linee trovate: ", len(lines), lines)
 
     extreme_points = calculate_extreme_points(lines, processed_img.shape)
-    print(extreme_points)
+    print("extreme points: ", extreme_points)
 
+    # qui utilizzo la stessa procedura che usa stichpro, lo faccio solo per visualizzare il risultato
+    # disegna una maschera "ausiliaria" che copra il bordo di interesse nell'immagine (v. primo plot)
+    aux_mask_ant = np.zeros_like(processed_img, dtype=np.uint8) # Per i punti dell'altro lato
+    aux_mask_pos = np.zeros_like(processed_img, dtype=np.uint8) # Per i punti di un lato
+    aux_mask = processed_img.copy()     # Per mettere insieme tutti i risultati, per visualizzare
+
+    cv.line(aux_mask_ant, extreme_points[1][0], extreme_points[1][1], 1, 10)
+    cv.line(aux_mask_pos, extreme_points[0][0], extreme_points[0][1], 1, 10)
+
+
+    # Trovo punti sul bordo come sovrapposizione tra la maschera ausiliaria e l'immagine con i bordi (binary_image)
+    ant_points = np.roll(np.array(np.where(aux_mask_ant * processed_img)).T, 1, 1)
+    pos_points = np.roll(np.array(np.where(aux_mask_pos * processed_img)).T, 1, 1)
+
+    aux_mask = cv.cvtColor(aux_mask, cv.COLOR_GRAY2RGB)
+    # disegna i punti per sola visualizzazione
+    for point in ant_points:
+        cv.drawMarker(aux_mask, (point), color=(255,255,255), markerType=cv.MARKER_SQUARE, markerSize=3, thickness=2)
+
+    for point in pos_points:
+        cv.drawMarker(aux_mask, (point), color=(155,155,15), markerType=cv.MARKER_SQUARE, markerSize=3, thickness=2)
+
+    # cv.drawMarker(aux_mask, (cx, cy), (159), markerType=cv.MARKER_CROSS, markerSize=9, thickness=3)  # disegno centro
+    # cv.drawMarker(aux_mask, (rx, ry), (150), markerType=cv.MARKER_CROSS, markerSize=5, thickness=3)  # disegno raggio
+    # cv.drawMarker(aux_mask, (point_ant[0][::-1]), (100), markerType=cv.MARKER_CROSS, markerSize=9, thickness=3)  # disegno punto piú vicino rispetto al punto (rx, rY)
+
+    plt.imshow(processed_img, cmap='gray')
+    plt.title("ant_axis_line_mask")
+    plt.show()
+
+    plt.imshow(aux_mask) # cmap='gray'
+    plt.show()
+
+    # queste diventano inutile (le uso solo per visualizzare)
     line_pixels = extract_line_pixels(processed_img, lines)
     print(line_pixels)
 
     # Plot the results
-    fig, ax = plt.subplots(1, 2, figsize=(12, 6))
+    fig, ax = plt.subplots(1, 3, figsize=(12, 6))
 
     ax[0].imshow(processed_img, cmap='gray')
     ax[0].set_title('Input image')
     ax[0].set_axis_off()
 
-    ax[1].imshow(line_pixels, cmap='gray')
-    ax[1].set_title('Binary mask of detected lines')
-    ax[1].set_axis_off()
+    ax[1].imshow(processed_img, cmap='gray')
+    ax[1].set_ylim((processed_img.shape[0], 0))
+    ax[1].set_title('Detected lines')
+
+    colors = ["red", "green", "purple", "orange", "yellow"]
+    # Disegna le linee e aggiungi etichette
+    for idx, (x0, y0, slope) in enumerate(lines, start=0):
+        ax[1].axline((x0, y0), slope=slope, color=colors[idx % len(colors)], linewidth=5 / (1 + idx))
+        # Aggiungi il numero della linea vicino a (x0, y0)
+        ax[1].text(x0, y0, f"Line {idx}", color=colors[idx % len(colors)], fontsize=12, verticalalignment='top',
+                   horizontalalignment='right')
+
+    ax[2].imshow(aux_mask) # cmap='gray'
+    ax[2].set_title('Found borders')
+    ax[2].set_axis_off()
 
     plt.tight_layout()
-    # plt.savefig(save_dir + 'line_pixels_binary.png', dpi=300)
+    plt.title("Final Results")
+    plt.savefig(save_dir + 'Housh_skimage_final_result.png', dpi=300)
     plt.show()
 
     return 0
