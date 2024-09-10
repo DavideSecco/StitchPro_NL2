@@ -38,6 +38,8 @@ def find_points(binary_image):
     # PAOLO le due immagini binary image (prima x_out) and aux image (prima x) sono esattamente identiche.
     # Perché non hai fatto semplicemente una copia?
 
+    # RISPOSTA: semplicemente per una questione di testare cosa ci fosse in alcune variabili tipo border points
+
 
     # scelta ancora euristica: Dovrebbero essere le cordinate dei centri
     cx = 430
@@ -99,7 +101,7 @@ def main(args):
     # PER QUESTO ESEMPIO viene utilizzata un'imamgine in particolare, te la mando. Il codice in questo momento non
     # funziona su un frammento qualsiasi
 
-    default_path = './bottom_left.tif'
+    default_path = '../bottom_left.tif'
     filepath = args[0] if len(args) > 0 else default_path
 
     prep = Preprocessing(filepath)
