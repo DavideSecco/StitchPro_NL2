@@ -1,5 +1,5 @@
 import sys
-import math
+import argparse
 import os
 import cv2 as cv
 import matplotlib.pyplot as plt
@@ -10,91 +10,6 @@ from skimage import data
 
 
 from utilities import Preprocessing
-
-
-def hough_transform(img, save_dir, show=False):
-    """
-    Funzione che applica la trasformata di Hough su un immagine binaria, restituisce le immagini con sopra evidenziate
-    le linee dritte trovate con la trasformata di Hough e la trasformata di Hough probabilistica
-    le linee dritte
-    :param img: immagine
-    :param show:
-    :param save:
-    :return:
-    """
-    if len(img.shape) == 2:
-        cdst = cv.cvtColor(img, cv.COLOR_GRAY2BGR)
-        cdstP = np.copy(cdst)
-
-    lines = cv.HoughLines(img, 1, np.pi / 180, 150, None, 0, 0)
-
-    if lines is not None:
-        for i in range(0, len(lines)):
-            rho = lines[i][0][0]
-            theta = lines[i][0][1]
-
-            # condizione per considerare unicamente le linee quasi orizzontali e quasi verticali
-            if abs(theta) < np.pi / 36 or abs(theta - np.pi / 2) < np.pi / 36 or abs(theta - np.pi) < np.pi / 36:
-                a = math.cos(theta)
-                b = math.sin(theta)
-                x0 = a * rho
-                y0 = b * rho
-                pt1 = (int(x0 + 1000 * (-b)), int(y0 + 2000 * (a)))  # estremo linea x + k * dx, k=1000 fattore di scala
-                pt2 = (int(x0 - 1000 * (-b)), int(y0 - 2000 * (a)))
-                cv.line(cdst, pt1, pt2, (0, 0, 255), 3, cv.LINE_AA)
-                draw_vertex_lines(cdst, x0, y0, a, b)
-    else:
-        # raise ValueError("Nessuna linea trovata")
-        print("Nessuna linea trovata")
-
-    linesP = cv.HoughLinesP(img, 1, np.pi / 180, 50, None, 50, 10)
-
-    if linesP is not None:
-        for i in range(0, len(linesP)):
-            l = linesP[i][0]
-            # Calcola la pendenza della linea per filtrare le linee diagonali
-            dx = l[2] - l[0]
-            dy = l[3] - l[1]
-            if dx == 0 or dy == 0 or abs(dy / dx) < 0.1:  # linee verticali, orizzontali o quasi orizzontali
-                cv.line(cdstP, (l[0], l[1]), (l[2], l[3]), (0, 0, 255), 3, cv.LINE_AA)
-
-    if show:
-        # cv.imshow("Source", img)
-        # cv.imshow("Detected Lines (in red) - Standard Hough Line Transform", cdst)
-        # cv.imshow("Detected Lines (in red) - Probabilistic Line Transform", cdstP)
-
-        plt.figure(figsize=(15, 5))  # Imposta la dimensione della figura (opzionale)
-
-        # Prima immagine
-        plt.subplot(1, 3, 1)  # (1 riga, 3 colonne, 1ª posizione)
-        plt.imshow(img, cmap='gray')
-        plt.axis('off')
-        plt.title("Source")
-
-        # Seconda immagine
-        plt.subplot(1, 3, 2)  # (1 riga, 3 colonne, 2ª posizione)
-        plt.imshow(cdst, cmap='gray')
-        plt.axis('off')
-        plt.title("Detected Lines (in red) - Standard Hough Line Transform")
-
-        # Terza immagine
-        plt.subplot(1, 3, 3)  # (1 riga, 3 colonne, 3ª posizione)
-        plt.imshow(cdstP, cmap='gray')
-        plt.axis('off')
-        plt.title("Detected Lines (in red) - Probabilistic Line Transform")
-
-        plt.suptitle("Final result for hough_transform", fontsize=16)
-
-        # Optimize layout and show the images
-        plt.tight_layout(rect=[0, 0, 1, 0.95])  # Adjust layout to make space for suptitle
-
-        plt.savefig(save_dir + 'hough_standard.png', dpi=300)
-
-        plt.show()
-
-    # cv.waitKey()
-    return 0
-
 
 
 def hough_transform_skimage_implementation(image, save_dir):
@@ -112,22 +27,10 @@ def hough_transform_skimage_implementation(image, save_dir):
     peaks = hough_line_peaks(h, theta, d)
     print(peaks)
     # print("peaks: ", peaks)
-
-    # Estrai le linee rilevate
-    lines = []
-    for _, angle, dist in zip(*peaks):
-        x0, y0 = dist * np.array([np.cos(angle), np.sin(angle)])
-        # Se angle è diverso da 0, calcola la pendenza come np.tan(angle + np.pi / 2)
-        # Altrimenti imposta slope a np.inf
-        if angle != 0:
-            slope = np.tan(angle + np.pi / 2)
-        else:
-            slope = np.inf
-        lines.append((x0, y0, slope))
+    lines = extract_lines(peaks)
+    lines = filter_lines(image, lines)
 
     debug = True
-
-    # ma non funziona? a che serve?
     if debug:
         # Generating figure 1
         fig, axes = plt.subplots(1, 3, figsize=(15, 6))
@@ -158,7 +61,7 @@ def hough_transform_skimage_implementation(image, save_dir):
 
         colors = ["red", "green", "purple", "orange", "yellow"]
         # Disegna le linee e aggiungi etichette
-        for idx, (x0, y0, slope) in enumerate(lines, start=0):
+        for idx, (x0, y0, slope, _) in enumerate(lines, start=0):
             ax[2].axline((x0, y0), slope=slope, color=colors[idx % len(colors)], linewidth=5/(1+idx))
             # Aggiungi il numero della linea vicino a (x0, y0)
             ax[2].text(x0, y0, f"Line {idx}", color=colors[idx % len(colors)], fontsize=12, verticalalignment='top', horizontalalignment='right')
@@ -171,57 +74,49 @@ def hough_transform_skimage_implementation(image, save_dir):
         plt.savefig(save_dir + 'hough_skimage.png', dpi=300)
         plt.show()
 
-        return lines
+    return lines
+
+
+def extract_lines(peaks):
+    # Estrai le linee rilevate
+    lines = []
+    for _, angle, dist in zip(*peaks):
+        x0, y0 = dist * np.array([np.cos(angle), np.sin(angle)])
+        # Se angle è diverso da 0, calcola la pendenza come np.tan(angle + np.pi / 2)
+        # Altrimenti imposta slope a np.inf
+        if angle != 0:
+            slope = np.tan(angle + np.pi / 2)
+        else:
+            slope = np.inf
+        lines.append((x0, y0, slope, angle))
 
     return lines
 
 
-def draw_vertex_lines(img, x0, y0, a, b):
-    img = img.copy()
+def filter_lines(image, lines):
+    """
+    Funzione che filtra le linee verticali ed orizzontali che si incrociano in un certo angolo della figura
+    :param image: frammento
+    :param lines:
+    :return:
+    """
+    filtered_lines = []
+    for line in lines:
+        x0, y0, slope, angle = line
+        # Controllo per le linee verticali (|θ| ≈ π/2) e orizzontali (θ ≈ 0)
+        if abs(angle) < np.pi / 36 or abs(angle - np.pi / 2) < np.pi / 36:
+            # Aggiunge una condizione per controllare se la linea è nell'area in basso a sinistra
+            if x0 < image.shape[1] / 2 and y0 > image.shape[0] / 2:
+                filtered_lines.append((x0, y0, slope, angle))
 
-    cv.drawMarker(img, (int(x0), int(y0)), (0, 255, 0), cv.MARKER_CROSS, 20, 2)
-
-    arrow_length = 50
-    pt2 = (int(x0 + arrow_length * a), int(y0 + arrow_length * b))
-    cv.arrowedLine(img, (int(x0), int(y0)), pt2, (0, 0, 255), 2, tipLength=0.3)
-
-    plt.imshow(img)
-    plt.show()
-
-
-### Non necessaria
-def extract_line_pixels(image, lines):
-    # Create an empty mask to store the line pixels
-    line_pixels = np.zeros(image.shape, dtype=np.uint8)
-
-    print(image.shape)
-
-    for x0, y0, slope in lines:
-        # Generate coordinates along the line
-        if slope == np.inf or slope > 10 ^ 12:  # Vertical line case
-            x = np.full(image.shape[0], x0)
-            # y = y0
-            y = np.arange(image.shape[0])
-        else:
-            x = np.arange(image.shape[1])
-            y = slope * (x - x0) + y0
-
-        # Ensure coordinates are within image bounds
-        valid = (x >= 0) & (x < image.shape[1]) & (y >= 0) & (y < image.shape[0])
-        x_valid = x[valid].astype(int)
-        y_valid = y[valid].astype(int)
-
-        # Update the mask
-        line_pixels[y_valid, x_valid] = 1
-
-    return line_pixels
+    return filtered_lines
 
 
 def calculate_extreme_points(lines, image_shape):
     extreme_points = []
     height, width = image_shape
     # Calcola i punti estremi per ogni linea
-    for (x0, y0, slope) in lines:
+    for (x0, y0, slope, _) in lines:
         if slope == np.inf:  # Caso linea verticale
             # La linea è verticale, quindi x è costante (x0) e y varia dall'inizio alla fine dell'immagine
             x1 = int(x0)
@@ -293,7 +188,7 @@ def plot_results(processed_img, lines, save_dir, aux_mask):
     colors = ["red", "green", "purple", "orange", "yellow"]
 
     # Disegna le linee e aggiungi etichette
-    for idx, (x0, y0, slope) in enumerate(lines, start=0):
+    for idx, (x0, y0, slope, _) in enumerate(lines, start=0):
         ax[1].axline((x0, y0), slope=slope, color=colors[idx % len(colors)], linewidth=5 / (1 + idx))
         # Aggiungi il numero della linea vicino a (x0, y0)
         ax[1].text(x0, y0, f"Line {idx}", color=colors[idx % len(colors)], fontsize=12, verticalalignment='top',
@@ -310,20 +205,45 @@ def plot_results(processed_img, lines, save_dir, aux_mask):
 
 
 def main(argv):
+    parser = argparse.ArgumentParser(description="Script per line detection con trasformata di Hough.")
+
+    # Definizione degli argomenti
+    parser.add_argument(
+        "-i", "--input",
+        type=str,
+        required=True,
+        help="Percorso al file di input da processare."
+    )
+
+    parser.add_argument(
+        "-o", "--orientation",
+        type=str,
+        choices=["ur", "ul", "dr", "dl"],  # Posizioni accettate
+        required=True,
+        help="Posizione del frammento (ur=up-right, ul=up-left, dr=down-right, dl=down-left)."
+    )
+
+    # Parsing degli argomenti
+    args = parser.parse_args()
+
+    # Validazione del percorso del file
+    input_path = args.input
+    position = args.orientation
+
 
     # Validate the file path
     try:
         # Check id a path has been inserted
-        if len(argv) == 0:
-            raise IndexError("Must insert a valid file path")
+        # if len(argv) == 0:
+        #    raise IndexError("Must insert a valid file path")
 
         # Check if the file path exists
-        if not os.path.exists(argv[0]):
-            raise FileNotFoundError(f"The file at path '{argv.input_path}' does not exist.")
+        if not os.path.exists(input_path):
+            raise FileNotFoundError(f"The file at path '{input_path}' does not exist.")
 
         # Check if it is a file (not a directory)
-        if not os.path.isfile(argv[0]):
-            raise IsADirectoryError(f"The path '{argv.input_path}' is not a file.")
+        if not os.path.isfile(input_path):
+            raise IsADirectoryError(f"The path '{input_path}' is not a file.")
 
     except (FileNotFoundError, IsADirectoryError, IndexError) as e:
         print(e)
@@ -331,21 +251,23 @@ def main(argv):
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
 
-    file_path = argv[0]
-    file_name = os.path.splitext(os.path.basename(file_path))[0] # Ottieni il nome del file senza estensione
+    # file_path = argv[0]
+    file_name = os.path.splitext(os.path.basename(input_path))[0] # Ottieni il nome del file senza estensione
     print("Name of the file: ", file_name)
     save_dir = "./hough_trasform_results/" + file_name + '/' # Setto il nome della cartella dove salvare i risultati
     os.makedirs(save_dir, exist_ok=True) # Crea la cartella, inclusi i genitori se non esistono
 
 
     # PreProcessing of the image and visulization
-    prep = Preprocessing(file_path)
+    prep = Preprocessing(input_path)
     plt.imshow(prep.original_image)
     plt.title("original_image")
     plt.show()
+    print(prep.original_image.shape)
     processed_img = prep.preprocess_image(show_steps=False,
-                                          median_filter_size=30,
-                                          closing_footprint_size=30,
+                                          apply_padding=True,
+                                          median_filter_size=40,
+                                          closing_footprint_size=50,
                                           apply_hull_image=False)
 
     # serve perché l'edge detection fatta con Canny restituisce un'immagine di tipo bool

@@ -15,13 +15,13 @@ class Preprocessing:
         self.original_image = imageio.imread(image_path)
         self.processed_image = None
 
-    def show_images(self, *images, figure_title):
+    def show_images(self, *images, figure_title, cmap='gray'):
         n_img = len(images)
         fig, ax = plt.subplots(math.ceil(n_img / 4), n_img % 4 if n_img < 4 else 4, figsize=(10, 10))
         fig.suptitle(figure_title, fontsize=16)
         ax = ax.flatten()
         for n, i in enumerate(images):
-            ax[n].imshow(i, cmap='gray')
+            ax[n].imshow(i, cmap=cmap)
         plt.show()
 
     def find_best_threshold_otsu(self):
@@ -38,6 +38,24 @@ class Preprocessing:
 
             print(f"Original shape: {original_shape}, Rescaled shape: {new_shape}")
         return self.processed_image
+
+    def pad_image(self, pad_width=200, show=False, dtype=np.uint8, **kwargs):
+        pre_padding = self.processed_image.copy()
+        padded_image = np.zeros((
+            pre_padding.shape[0] + 2 * pad_width,
+            pre_padding.shape[1] + 2 * pad_width,
+            pre_padding.shape[2],
+        ), dtype=dtype)
+        for channel in range(0, pre_padding.shape[2]):
+            padded_image[:, :, channel] = np.pad(pre_padding[:, :, channel],
+                                  pad_width=pad_width,
+                                  constant_values=255,
+                                  **kwargs).astype(dtype)
+
+        self.processed_image = padded_image
+
+        if show:
+            self.show_images(pre_padding, self.processed_image, figure_title="Padding")
 
     def grayscale_transform(self, show=False):
         self.processed_image = color.rgb2gray(self.processed_image)
@@ -116,9 +134,11 @@ class Preprocessing:
     def preprocess_image(self, threshold=None, median_filter_size=20, closing_footprint_size=20, edge_sigma=15,
                          apply_grayscale=True, apply_threshold=True, apply_median_filter=True,
                          apply_binary_closing=True, apply_edge_detection=True, apply_hull_image=True,
-                         rescale_img=True, scaling_factor=0.25, show_steps=False):
+                         rescale_img=True, scaling_factor=0.25, apply_padding=True, show_steps=False):
         if rescale_img:
             self.rescale_img(scaling_factor=scaling_factor, show=show_steps)
+        if apply_padding:
+            self.pad_image(show=show_steps)
         if apply_grayscale:
             self.grayscale_transform(show=show_steps)
         if apply_threshold:
