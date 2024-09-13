@@ -25,10 +25,9 @@ def hough_transform_skimage_implementation(image, save_dir):
 
     # Trova i picchi nella trasformata di Hough
     peaks = hough_line_peaks(h, theta, d)
-    print(peaks)
     # print("peaks: ", peaks)
     lines = extract_lines(peaks)
-    lines = filter_lines(image, lines)
+    #lines = filter_lines(image, lines)
 
     debug = True
     if debug:
@@ -63,8 +62,10 @@ def hough_transform_skimage_implementation(image, save_dir):
         # Disegna le linee e aggiungi etichette
         for idx, (x0, y0, slope, _) in enumerate(lines, start=0):
             ax[2].axline((x0, y0), slope=slope, color=colors[idx % len(colors)], linewidth=5/(1+idx))
+            # Disegna un marker in (x0,y0)
+            ax[2].scatter(x0, y0, color=colors[idx % len(colors)], marker='x', s=100)
             # Aggiungi il numero della linea vicino a (x0, y0)
-            ax[2].text(x0, y0, f"Line {idx}", color=colors[idx % len(colors)], fontsize=12, verticalalignment='top', horizontalalignment='right')
+            # ax[2].text(x0, y0, f"Line {idx}", color=colors[idx % len(colors)], fontsize=12, verticalalignment='top', horizontalalignment='right')
 
 
         plt.suptitle("Final result for hough_transform_skimage", fontsize=16)
@@ -93,6 +94,31 @@ def extract_lines(peaks):
     return lines
 
 
+def get_coordinates_lines(lines, length, img_width, img_height):
+    x0, y0, slope, _ = lines
+
+    # Definizione della direzione della linea
+    dx = np.cos(np.arctan(slope))
+    dy = np.sin(np.arctan(slope))
+
+    # Generazione di punti simmetrici rispetto al punto iniziale (x0, y0)
+    t = np.linspace(-length / 2, length / 2, num=1000)  # Intervallo di parametri per ottenere punti lungo la linea
+
+    # Calcolo delle coordinate X e Y lungo la linea
+    x_coords = np.round(x0 + t * dx)
+    y_coords = np.round(y0 + t * dy)
+
+    # Verifica che i punti siano all'interno dei limiti dell'immagine
+    valid_indices = (x_coords >= 0) & (x_coords < img_width) & (y_coords >= 0) & (y_coords < img_height)
+
+    # Uso column_stack per unire le coordinate valide in un array di forma (n, 2)
+    valid_points = np.column_stack((x_coords[valid_indices], y_coords[valid_indices]))
+    print(valid_points)
+    print(valid_points.shape)
+    print(valid_points.dtype)
+    return valid_points
+
+
 def filter_lines(image, lines):
     """
     Funzione che filtra le linee verticali ed orizzontali che si incrociano in un certo angolo della figura
@@ -106,7 +132,7 @@ def filter_lines(image, lines):
         # Controllo per le linee verticali (|θ| ≈ π/2) e orizzontali (θ ≈ 0)
         if abs(angle) < np.pi / 36 or abs(angle - np.pi / 2) < np.pi / 36:
             # Aggiunge una condizione per controllare se la linea è nell'area in basso a sinistra
-            if x0 < image.shape[1] / 2 and y0 > image.shape[0] / 2:
+            if x0 < image.shape[1] / 2 and y0 < image.shape[0] / 2:
                 filtered_lines.append((x0, y0, slope, angle))
 
     return filtered_lines
@@ -190,6 +216,8 @@ def plot_results(processed_img, lines, save_dir, aux_mask):
     # Disegna le linee e aggiungi etichette
     for idx, (x0, y0, slope, _) in enumerate(lines, start=0):
         ax[1].axline((x0, y0), slope=slope, color=colors[idx % len(colors)], linewidth=5 / (1 + idx))
+        # Disegna un marker in (x0,y0)
+        ax[1].scatter(x0, y0, color=colors[idx % len(colors)], marker='x', s=200)
         # Aggiungi il numero della linea vicino a (x0, y0)
         ax[1].text(x0, y0, f"Line {idx}", color=colors[idx % len(colors)], fontsize=12, verticalalignment='top',
                    horizontalalignment='right')
@@ -228,15 +256,11 @@ def main(argv):
 
     # Validazione del percorso del file
     input_path = args.input
-    position = args.orientation
+    orientation = args.orientation
 
 
     # Validate the file path
     try:
-        # Check id a path has been inserted
-        # if len(argv) == 0:
-        #    raise IndexError("Must insert a valid file path")
-
         # Check if the file path exists
         if not os.path.exists(input_path):
             raise FileNotFoundError(f"The file at path '{input_path}' does not exist.")
@@ -255,7 +279,7 @@ def main(argv):
     file_name = os.path.splitext(os.path.basename(input_path))[0] # Ottieni il nome del file senza estensione
     print("Name of the file: ", file_name)
     save_dir = "./hough_trasform_results/" + file_name + '/' # Setto il nome della cartella dove salvare i risultati
-    os.makedirs(save_dir, exist_ok=True) # Crea la cartella, inclusi i genitori se non esistono
+    os.makedirs(save_dir, exist_ok=True)  # Crea la cartella, inclusi i genitori se non esistono
 
 
     # PreProcessing of the image and visulization
@@ -277,11 +301,12 @@ def main(argv):
 
     # hough_transform(processed_img, save_dir=save_dir, show=True)
     lines = hough_transform_skimage_implementation(processed_img, save_dir=save_dir)  # funziona molto meglio
-    # Linee ritornate in formato: ((x0, y0), slope)
+    # Linee ritornate in formato: ((x0, y0), slope, angle)
+    get_coordinates_lines(lines[0], 1000, *processed_img.shape[:2])
     extreme_points = calculate_extreme_points(lines, processed_img.shape)
 
-    print("linee trovate: ", len(lines), lines)
-    print("extreme points: ", extreme_points)
+    #print("linee trovate: ", len(lines), lines)
+    #print("extreme points: ", extreme_points)
 
     #aux_mask = processed_img.copy()  # Per mettere insieme tutti i risultati, per visualizzare
     #extract_ant_pos_points(processed_img, extreme_points, aux_mask)
