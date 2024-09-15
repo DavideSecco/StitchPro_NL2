@@ -113,12 +113,25 @@ class Image_Lines():
         print(self.lines)
 
         # Questa poi sarà da perfezionare, perchè dovremo selezionare le linee che vogliamo considerare
-        self.ant_points, self.pos_points = self.extract_ant_pos_points()
+        self.ant_points = self.extract_points_on_border(0)[2]
+        self.pos_points = self.extract_points_on_border(1)[2]
+
+        self.vert_oriz_lines = self.filter_orizontal_vertical_lines()
+
+        first, second = self.best_line_combination()
+
+        self.ant_points = self.extract_points_on_border(first)[2]
+        self.pos_points = self.extract_points_on_border(second)[2]
 
     def hough_transform_skimage_implementation(self):
-        # Trova i picchi nella trasformata di Hough
-        peaks = hough_line_peaks(self.h, self.theta, self.d, threshold=0.2 * np.max(self.h))
-        print("peaks: ", peaks)
+        threshold = 1
+        peaks = hough_line_peaks(self.h, self.theta, self.d, threshold=threshold * np.max(self.h))
+
+        while len(peaks[0]) < 4:
+            threshold *= 0.9
+            peaks = hough_line_peaks(self.h, self.theta, self.d, threshold=threshold * np.max(self.h))
+
+        print("Ho trovato ", len(peaks[0]), "peaks:",  peaks)
 
         # Estrai le linee rilevate
         lines = []
@@ -178,21 +191,20 @@ class Image_Lines():
 
         plt.show()
 
-    def extract_ant_pos_points(self):
-        # qui utilizzo la stessa procedura che usa stichpro, lo faccio solo per visualizzare il risultato
-        # disegna una maschera "ausiliaria" che copra il bordo di interesse nell'immagine (v. primo plot)
-        aux_mask_ant = np.zeros_like(self.image, dtype=np.uint8)  # Per i punti dell'altro lato
-        aux_mask_pos = np.zeros_like(self.image, dtype=np.uint8)  # Per i punti di un lato
+    # Non la useremo più
+    def extract_points_on_border(self, index):
+        aux_mask = np.zeros_like(self.image, dtype=np.uint8)
 
-        cv.line(aux_mask_pos, self.lines[0].extreme_points[0], self.lines[0].extreme_points[1], 1, 10)
-        cv.line(aux_mask_ant, self.lines[1].extreme_points[0], self.lines[1].extreme_points[1], 1, 10)
+        # Il paramentro di thickness è fondamentale: capire quale sis il valore migliore è la chiave:
+        # Per partire: (img.shape[0]+img.shape[1])/2 * 1/25
+        # Media delle dimensioni dell'immagine e poi divisa per 25
+        thickness = int((self.image.shape[0] + self.image.shape[1]) / 2 * (1 / 25))
+        print("thickness", thickness)
+        cv.line(aux_mask, self.lines[index].extreme_points[0], self.lines[index].extreme_points[1], 1, thickness=thickness)
 
+        points = np.roll(np.array(np.where(aux_mask * self.image)).T, 1, 1)
 
-        # Trovo punti sul bordo come sovrapposizione tra la maschera ausiliaria e l'immagine con i bordi (binary_image)
-        ant_points = np.roll(np.array(np.where(aux_mask_ant * self.image)).T, 1, 1)
-        pos_points = np.roll(np.array(np.where(aux_mask_pos * self.image)).T, 1, 1)
-
-        return ant_points, pos_points
+        return index, len(points), points
 
     def visualize_ant_pos_points(self):
         aux_mask = self.image.copy()
@@ -213,6 +225,58 @@ class Image_Lines():
 
         plt.imshow(aux_mask)  # cmap='gray'
         plt.show()
+
+    def best_line_combination(self):
+        # 1) Ordino le linee in base a quanti pixels sono sovrapposti con il contorno
+        results = []
+        for index in self.vert_oriz_lines:
+            results.append(self.extract_points_on_border(index))
+
+        # Ordina sulla base del secondo valore di ciascuna tupla
+        sorted_results = sorted(results, key=lambda x: x[1], reverse=True)
+
+        print("Best lines (didn't check if they are orthongonal):")
+        for result in sorted_results:
+            print(result[0], result[1])
+
+        # 2) Contrllo che le linee trovate siano perperndicolari fra loro:
+        # DA FARE
+
+        for index, _, _ in sorted_results:
+            # Calcola la differenza tra il primo angolo e l'angolo corrente
+            angle_diff = abs(self.lines[sorted_results[0][0]].angle - self.lines[index].angle)
+
+            # Modulo per evitare differenze oltre 180 gradi
+            angle_diff = angle_diff % np.pi
+
+            # Verifica se la differenza è 90 gradi (entro una tolleranza)
+            if np.isclose(angle_diff, np.pi/2, atol=1e-1):
+                print(f"La linea 0 e la linea {index} sono ortogonali")
+                print(sorted_results[0][0], index)
+                return sorted_results[0][0], index
+            else:
+                print(f"La linea 0 e la linea {index} NON sono ortogonali")
+
+        return sorted_results[0][0], sorted_results[1][0]
+
+    def filter_orizontal_vertical_lines(self):
+        """
+        Funzione che filtra le linee verticali ed orizzontali che si incrociano in un certo angolo della figura
+        :param image: frammento
+        :param lines:
+        :return:
+        """
+        filtered_lines = []
+        for index, line in enumerate(self.lines, start=0):
+            # x0, y0, slope, angle = line
+            # Controllo per le linee verticali (|θ| ≈ π/2) e orizzontali (θ ≈ 0)
+            print("line", index, "angle", line.angle)
+            if abs(self.lines[index].angle) < np.pi / 36 or abs(self.lines[index].angle - np.pi / 2) < np.pi / 36 or abs(self.lines[index].angle + np.pi / 2) < np.pi / 36:
+                # Aggiunge una condizione per controllare se la linea è nell'area in basso a sinistra
+                # if x0 < self.image.shape[1] / 2 and y0 < self.image.shape[0] / 2:
+                    filtered_lines.append(index)
+
+        return filtered_lines
 
 
 def filter_lines(image, lines):
@@ -322,7 +386,7 @@ def main(argv):
     plt.title("original_image")
     plt.show()
     print(prep.original_image.shape)
-    processed_img = prep.preprocess_image(show_steps=True,
+    processed_img = prep.preprocess_image(show_steps=False,
                                           apply_padding=True,
                                           median_filter_size=40,
                                           closing_footprint_size=50,
@@ -334,35 +398,9 @@ def main(argv):
     # Trasformation throgh hough
 
     image_lines = Image_Lines(processed_img)
-    print(image_lines.lines)
+    # print(image_lines.lines)
     image_lines.visualize_all_lines()
     image_lines.visualize_ant_pos_points()
-    # hough_transform(processed_img, save_dir=save_dir, show=True)
-    # lines = hough_transform_skimage_implementation(processed_img, save_dir=save_dir)  # funziona molto meglio
-    # Linee ritornate in formato: ((x0, y0), slope, angle)
-    # lines_cordinates = get_coordinates_lines(lines[0], 1000, *processed_img.shape[:2])
-
-
-    # extreme_points = calculate_extreme_points(lines, processed_img.shape)
-
-
-    # print(extreme_points)
-
-    # for line in lines:
-        # print(line.extreme_points)
-        # print(line.cordinate_points[0], line.cordinate_points[-1])
-        # print(line)
-    # print(lines[1].extreme_points)
-    # print(lines[1].valid_points[0])
-    # print(lines[1].valid_points[-1])
-
-    #print("linee trovate: ", len(lines), lines)
-    #print("extreme points: ", extreme_points)
-
-    #aux_mask = processed_img.copy()  # Per mettere insieme tutti i risultati, per visualizzare
-    #extract_ant_pos_points(processed_img, extreme_points, aux_mask)
-    #plot_results(processed_img, lines, save_dir, aux_mask)
-
 
     return 0
 
