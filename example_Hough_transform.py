@@ -12,65 +12,49 @@ from skimage import data
 from utilities import Preprocessing
 
 class Line():
+    """
+    Class used to represent a Line
+
+    Attributes
+    -------------------------
+    x0, y0: float/int
+        cordinates in which the line pass
+    angle: float
+        angle in radiant between the orizonatal line and the line (going down)
+    dist: float
+        distance between the line and the origin
+    slope: float
+        slope of the line
+    cordinates points: vectors of (int, int)
+        all the point cordinates of that line
+    extreme points: [(int,int),(int,int)]
+        the two extreme points of that line
+
+    Methods
+    -----------
+    extract_line_pixels():
+        estrare dati i dati della linea, i pixels che le appartegono
+    """
     def __init__(self, angle, dist, image):
         self.x0 = dist * np.cos(angle)
         self.y0 = dist * np.sin(angle)
+        self.dist = dist
         self.angle = angle
 
-        # Se angle è diverso da 0, calcola la pendenza come np.tan(angle + np.pi / 2)
-        # Altrimenti imposta slope a np.inf
-        if np.isclose(angle, 0, atol=1e-3):
-            self.slope = np.inf
-        else:
-            self.slope = np.tan(angle + (np.pi / 2))
-            # self.slope = np.tan(self.angle)
+        # if angle close 0 --> np.inf
+        # otherwise --> calcola la pendenza come np.tan(angle + np.pi / 2)
+        self.slope = np.inf if np.isclose(angle, 0, atol=1e-3) else np.tan(angle + (np.pi / 2))
 
-        # self.valid_points = self.get_cordinates_points(img_width=image.shape[1], img_height=image.shape[0])
-        self.extreme_points = self.get_extreme_points(img_width=image.shape[1], img_height=image.shape[0]) # NON FUNZIONA, SI PUÒ ELIMINARE
         self.cordinate_points = self.extract_line_pixels(img_width=image.shape[1], img_height=image.shape[0])
-
-    # Onnstamenta questa non mi piace, penso di aver fatto la stessa funzione qualche commit fa: LENGTH COSA FA?
-    # NON FUNZIONA --> da eliminare o da chiedere a Paolo
-    def get_cordinates_points(self, img_width, img_height, length = 1000):
-        # Definizione della direzione della linea
-        dx = np.cos(np.arctan(self.slope))
-        dy = np.sin(np.arctan(self.slope))
-
-        # Generazione di punti simmetrici rispetto al punto iniziale (x0, y0)
-        t = np.linspace(-length / 2, length / 2, num=1000)  # Intervallo di parametri per ottenere punti lungo la linea
-
-        # Calcolo delle coordinate X e Y lungo la linea
-        x_coords = np.round(self.x0 + t * dx)
-        y_coords = np.round(self.y0 + t * dy)
-
-        # Verifica che i punti siano all'interno dei limiti dell'immagine
-        valid_indices = (x_coords >= 0) & (x_coords < img_width) & (y_coords >= 0) & (y_coords < img_height)
-
-        # Uso column_stack per unire le coordinate valide in un array di forma (n, 2)
-        return np.column_stack((x_coords[valid_indices], y_coords[valid_indices]))
-
-    # Anche questa forse non serve, l'informazione può essere presa da extract_line_pixels e prendendo gli ultimi pixels
-    def get_extreme_points(self, img_width, img_height):
-        if self.slope == np.inf:  # Caso linea verticale
-            # La linea è verticale, quindi x è costante (x0) e y varia dall'inizio alla fine dell'immagine
-            x1 = int(self.x0)
-            y1 = 0  # Intersezione con il bordo superiore
-            x2 = int(self.x0)
-            y2 = img_height  # Intersezione con il bordo inferiore
-        else:
-            # Calcola le coordinate dei punti estremi per linee non verticali
-            x1 = 0 # MA QUESTO È SBAGLIATO
-            y1 = int(self.y0 - self.slope * self.x0)  # Intersezione con y all'inizio dell'immagine (x=0)
-
-            x2 = img_width
-            y2 = int(self.y0 + self.slope * (x2 - self.x0))  # Intersezione con y alla fine dell'immagine (x=width)
-
-        # Aggiungi le coordinate calcolate come punti estremi
-        return [(x1, y1), (x2, y2)]
+        self.extreme_points = [self.cordinate_points[0], self.cordinate_points[-1]]
 
     def extract_line_pixels(self, img_width, img_height):
-        # Calcola la tangente dell'angolo
-
+        """
+        :param img_width:
+        :param img_height:
+        :return: prunti_linea: vector of (int,int)
+            cordinates of the pixel that belongs to the line
+        """
         # Inizializza una lista per salvare i punti (x, y)
         punti_linea = []
 
@@ -93,15 +77,31 @@ class Line():
 
     def __repr__(self):
         return (f"Linea(x0={self.x0}, y0={self.y0}, slope={self.slope}, angle={self.angle}) \n"
-                f"Punti finali di tutti i punti: {self.cordinate_points[0]} {self.cordinate_points[-1]} \n"
-                # f"Extreme Points: {self.extreme_points} \n"
-                )
+                f"Punti finali di tutti i punti: {self.cordinate_points[0]} {self.cordinate_points[-1]} \n")
 
 class Image_Lines():
-    # Si suppone che venga passata già l'immagine preprocessed
+    """
+    A class to represent a image, and the lines found. Then find the cut borders
+
+    Attributes
+    ------------
+    image: image
+        preprocessed image
+    lines: vector of Line
+        straight line founded
+    indexes_vert_oriz_lines: vector of [int]
+        selection of the images that are orizontal or vertical
+    self.ant_points, self.pos_points: vector of [int]
+        points that overlap with the mask
+
+    Methods
+    ------------
+
+    """
     def __init__(self, image):
         self.image = image
 
+        # QUESTO PEZZO SI PUO' SPOSTARE NELLA FUNZIONE NEL CASO SI DECIDA CHE IL GRAFICO DELLA TRASFORMATA NON SERVE
         # Create of an array of angles from -90° to 90°, divided in 360 steps: are the tested angles in hough transformation.
         tested_angles = np.linspace(-np.pi / 2, np.pi / 2, 360, endpoint=False)
         # h: La matrice di accumulo della Trasformata di Hough.
@@ -110,13 +110,7 @@ class Image_Lines():
         self.h, self.theta, self.d = hough_line(self.image, theta=tested_angles)
 
         self.lines = self.hough_transform_skimage_implementation()
-        print(self.lines)
-
-        # Questa poi sarà da perfezionare, perchè dovremo selezionare le linee che vogliamo considerare
-        self.ant_points = self.extract_points_on_border(0)[2]
-        self.pos_points = self.extract_points_on_border(1)[2]
-
-        self.vert_oriz_lines = self.filter_orizontal_vertical_lines()
+        self.indexes_vert_oriz_lines = self.filter_orizontal_vertical_lines()
 
         first, second = self.best_line_combination()
 
@@ -129,70 +123,13 @@ class Image_Lines():
 
         while len(peaks[0]) < 4:
             threshold *= 0.9
-            peaks = hough_line_peaks(self.h, self.theta, self.d, threshold=threshold * np.max(self.h))
+            peaks = hough_line_peaks(self.h, self.theta, self.d, threshold = threshold * np.max(self.h))
 
-        print("Ho trovato ", len(peaks[0]), "peaks:",  peaks)
+            print(f"Ho trovato {len(peaks[0])} peaks:", peaks)
+            return [Line(angle, dist, self.image) for _, angle, dist in zip(*peaks)]
 
-        # Estrai le linee rilevate
-        lines = []
-        for _, angle, dist in zip(*peaks):
-            lines.append(Line(angle, dist, self.image))
-
-        return lines
-
-    def visualize_all_lines(self, save_dir=None):
-        fig, axes = plt.subplots(1, 3, figsize=(15, 6))
-        ax = axes.ravel()
-
-        ax[0].imshow(self.image, cmap='gray')
-        ax[0].set_title('Input image')
-        ax[0].set_axis_off()
-
-        # Io onestamente toglierei questa ax[1], anche se non so se sia rilevante,
-        # non mi sono messo capire a cosa serva, ma se lo si toglie si possono togliere anche
-        # self.h, self.theta, self.d dal main
-        # e probabilmente raggruppare le due funzioni visualize
-
-        angle_step = 0.5 * np.diff(self.theta).mean()
-        d_step = 0.5 * np.diff(self.d).mean()
-        bounds = [
-            np.rad2deg(self.theta[0] - angle_step),
-            np.rad2deg(self.theta[-1] + angle_step),
-            self.d[-1] + d_step,
-            self.d[0] - d_step,
-        ]
-        ax[1].imshow(np.log(1 + self.h), extent=bounds, cmap='gray', aspect=1 / 1.5)  # plotta la trasformata
-        ax[1].set_title('Hough transform')
-        ax[1].set_xlabel('Angles (degrees)')
-        ax[1].set_ylabel('Distance (pixels)')
-        ax[1].axis('image')
-
-        ax[2].imshow(self.image, cmap='gray')
-        ax[2].set_ylim((self.image.shape[0], 0))
-        # ax[2].set_axis_off()
-        ax[2].set_title('Detected lines')
-
-        colors = ["red", "green", "purple", "orange", "yellow"]
-        # Disegna le linee e aggiungi etichette
-        for idx, line in enumerate(self.lines, start=0):
-            ax[2].axline((line.x0, line.y0), slope=line.slope, color=colors[idx % len(colors)], linewidth=5 / (1 + idx))
-            # Disegna un marker in (x0,y0)
-            ax[2].scatter(line.x0, line.y0, color=colors[idx % len(colors)], marker='x', s=100)
-            # Aggiungi il numero della linea vicino a (x0, y0)
-            ax[2].text(line.x0, line.y0, f"Line {idx}", color=colors[idx % len(colors)], fontsize=12,
-                       verticalalignment='top', horizontalalignment='right')
-
-        plt.suptitle("Final result for hough_transform_skimage", fontsize=16)
-
-        plt.tight_layout()
-
-        if save_dir is not None:
-            plt.savefig(save_dir + 'hough_skimage.png', dpi=300)
-
-        plt.show()
-
-    # Non la useremo più
     def extract_points_on_border(self, index):
+
         aux_mask = np.zeros_like(self.image, dtype=np.uint8)
 
         # Il paramentro di thickness è fondamentale: capire quale sis il valore migliore è la chiave:
@@ -206,30 +143,10 @@ class Image_Lines():
 
         return index, len(points), points
 
-    def visualize_ant_pos_points(self):
-        aux_mask = self.image.copy()
-
-        aux_mask = cv.cvtColor(aux_mask, cv.COLOR_GRAY2RGB)
-        # disegna i punti per sola visualizzazione
-        for point in self.ant_points:
-            cv.drawMarker(aux_mask, tuple(point), color=(255, 255, 255), markerType=cv.MARKER_SQUARE, markerSize=3,
-                          thickness=2)
-
-        for point in self.pos_points:
-            cv.drawMarker(aux_mask, tuple(point), color=(155, 155, 15), markerType=cv.MARKER_SQUARE, markerSize=3,
-                          thickness=2)
-
-        plt.imshow(self.image, cmap='gray')
-        plt.title("ant_axis_line_mask")
-        plt.show()
-
-        plt.imshow(aux_mask)  # cmap='gray'
-        plt.show()
-
     def best_line_combination(self):
         # 1) Ordino le linee in base a quanti pixels sono sovrapposti con il contorno
         results = []
-        for index in self.vert_oriz_lines:
+        for index in self.indexes_vert_oriz_lines:
             results.append(self.extract_points_on_border(index))
 
         # Ordina sulla base del secondo valore di ciascuna tupla
@@ -278,6 +195,76 @@ class Image_Lines():
 
         return filtered_lines
 
+    def plot_results(self, save_dir=None):
+        fig, axes = plt.subplots(1, 3, figsize=(15, 6))
+        ax = axes.ravel()
+
+        # 1 Immagine
+
+        ax[0].imshow(self.image, cmap='gray')
+        ax[0].set_title('Input image')
+        ax[0].set_axis_off()
+
+        # Io onestamente toglierei questa ax[1], anche se non so se sia rilevante,
+        # non mi sono messo capire a cosa serva, ma se lo si toglie si possono togliere anche
+        # self.h, self.theta, self.d dal main
+        # e probabilmente raggruppare le due funzioni visualize
+
+        # angle_step = 0.5 * np.diff(self.theta).mean()
+        # d_step = 0.5 * np.diff(self.d).mean()
+        # bounds = [
+        #    np.rad2deg(self.theta[0] - angle_step),
+        #    np.rad2deg(self.theta[-1] + angle_step),
+        #    self.d[-1] + d_step,
+        #    self.d[0] - d_step,
+        # ]
+        # ax[1].imshow(np.log(1 + self.h), extent=bounds, cmap='gray', aspect=1 / 1.5)  # plotta la trasformata
+        # ax[1].set_title('Hough transform')
+        # ax[1].set_xlabel('Angles (degrees)')
+        # ax[1].set_ylabel('Distance (pixels)')
+        # ax[1].axis('image')
+
+        # 2 Immagine:
+        ax[1].imshow(self.image, cmap='gray')
+        ax[1].set_ylim((self.image.shape[0], 0))
+        # ax[2].set_axis_off()
+        ax[1].set_title('Detected lines')
+
+        colors = ["red", "green", "purple", "orange", "yellow"]
+        # Disegna le linee e aggiungi etichette
+        for idx, line in enumerate(self.lines, start=0):
+            ax[1].axline((line.x0, line.y0), slope=line.slope, color=colors[idx % len(colors)], linewidth=5 / (1 + idx))
+            # Disegna un marker in (x0,y0)
+            ax[1].scatter(line.x0, line.y0, color=colors[idx % len(colors)], marker='x', s=100)
+            # Aggiungi il numero della linea vicino a (x0, y0)
+            ax[1].text(line.x0, line.y0, f"Line {idx}", color=colors[idx % len(colors)], fontsize=12,
+                       verticalalignment='top', horizontalalignment='right')
+
+        # Immagine 3
+        aux_mask = self.image.copy()
+        aux_mask = cv.cvtColor(aux_mask, cv.COLOR_GRAY2RGB)
+        # disegna i punti per sola visualizzazione
+        for point in self.ant_points:
+            cv.drawMarker(aux_mask, tuple(point), color=(255, 255, 255), markerType=cv.MARKER_SQUARE, markerSize=3,
+                          thickness=2)
+
+        for point in self.pos_points:
+            cv.drawMarker(aux_mask, tuple(point), color=(155, 155, 15), markerType=cv.MARKER_SQUARE, markerSize=3,
+                          thickness=2)
+
+        ax[2].imshow(aux_mask)
+        ax[2].set_title("Contorni")
+
+
+        plt.suptitle("Final result for hough_transform_skimage", fontsize=16)
+
+        plt.tight_layout()
+
+        if save_dir is not None:
+            plt.savefig(save_dir + 'hough_skimage.png', dpi=300)
+
+        plt.show()
+
 
 def filter_lines(image, lines):
     """
@@ -296,39 +283,6 @@ def filter_lines(image, lines):
                 filtered_lines.append((x0, y0, slope, angle))
 
     return filtered_lines
-
-def plot_results(processed_img, lines, save_dir, aux_mask):
-    # Plot the results
-    fig, ax = plt.subplots(1, 3, figsize=(12, 6))
-
-    ax[0].imshow(processed_img, cmap='gray')
-    ax[0].set_title('Input image')
-    ax[0].set_axis_off()
-
-    ax[1].imshow(processed_img, cmap='gray')
-    ax[1].set_ylim((processed_img.shape[0], 0))
-    ax[1].set_title('Detected lines')
-
-    colors = ["red", "green", "purple", "orange", "yellow"]
-
-    # Disegna le linee e aggiungi etichette
-    for idx, (x0, y0, slope, _) in enumerate(lines, start=0):
-        ax[1].axline((x0, y0), slope=slope, color=colors[idx % len(colors)], linewidth=5 / (1 + idx))
-        # Disegna un marker in (x0,y0)
-        ax[1].scatter(x0, y0, color=colors[idx % len(colors)], marker='x', s=200)
-        # Aggiungi il numero della linea vicino a (x0, y0)
-        ax[1].text(x0, y0, f"Line {idx}", color=colors[idx % len(colors)], fontsize=12, verticalalignment='top',
-                   horizontalalignment='right')
-
-    ax[2].imshow(aux_mask, cmap='gray')  # cmap='gray'
-    ax[2].set_title('Found borders')
-    ax[2].set_axis_off()
-
-    plt.tight_layout()
-    plt.title("Final Results")
-    plt.savefig(save_dir + 'Housh_skimage_final_result.png', dpi=300)
-    plt.show()
-
 
 def main(argv):
     parser = argparse.ArgumentParser(description="Script per line detection con trasformata di Hough.")
@@ -395,12 +349,11 @@ def main(argv):
     # serve perché l'edge detection fatta con Canny restituisce un'immagine di tipo bool
     processed_img = processed_img.astype(np.uint8) * 255
     print(processed_img.shape)
-    # Trasformation throgh hough
 
+    # Trasformation throgh hough
     image_lines = Image_Lines(processed_img)
     # print(image_lines.lines)
-    image_lines.visualize_all_lines()
-    image_lines.visualize_ant_pos_points()
+    image_lines.plot_results()
 
     return 0
 
