@@ -35,6 +35,10 @@ import time
 
 import matplotlib.pyplot as plt # DEBUGGING
 
+# IMPORT OUR CLASSES
+from utilities import Preprocessing, Line, Image_Lines
+
+
 # Names
 files = ["upper_right", "bottom_right", "bottom_left", "upper_left"]
 root_folder = os.getcwd()
