@@ -102,9 +102,9 @@ class Image_Lines():
     ------------
 
     """
-    def __init__(self, image):
+    def __init__(self, image, save_dir):
         self.image = image
-
+        self.save_dir = save_dir
         # QUESTO PEZZO SI PUO' SPOSTARE NELLA FUNZIONE NEL CASO SI DECIDA CHE IL GRAFICO DELLA TRASFORMATA NON SERVE
         # Create of an array of angles from -90° to 90°, divided in 360 steps: are the tested angles in hough transformation.
         tested_angles = np.linspace(-np.pi / 2, np.pi / 2, 360, endpoint=False)
@@ -122,6 +122,10 @@ class Image_Lines():
         self.ant_points = self.extract_points_on_border(first)[2]
         self.pos_points = self.extract_points_on_border(second)[2]
         self.intersection = self.find_intersection(first, second)  # returns (x,y) coordinates of the intersection
+        self.end_ant_point, self.end_pos_point = (self.ant_points[-1], self.pos_points[-1])
+
+        # DEBUGGING
+        print("end_points: ", self.end_ant_point, self.end_pos_point)
 
     def hough_transform_skimage_implementation(self):
         threshold = 1
@@ -132,7 +136,7 @@ class Image_Lines():
             peaks = hough_line_peaks(self.h, self.theta, self.d, threshold = threshold * np.max(self.h))
 
             print(f"Ho trovato {len(peaks[0])} peaks:", peaks)
-            return [Line(angle, dist, self.image) for _, angle, dist in zip(*peaks)]
+        return [Line(angle, dist, self.image) for _, angle, dist in zip(*peaks)]
 
     def extract_points_on_border(self, index):
 
@@ -142,7 +146,7 @@ class Image_Lines():
         # Per partire: (img.shape[0]+img.shape[1])/2 * 1/25
         # Media delle dimensioni dell'immagine e poi divisa per 25
         thickness = int((self.image.shape[0] + self.image.shape[1]) / 2 * (1 / 25))
-        print("thickness", thickness)
+        # print("thickness", thickness)
         cv.line(aux_mask, self.lines[index].extreme_points[0], self.lines[index].extreme_points[1], 1, thickness=thickness)
 
         points = np.roll(np.array(np.where(aux_mask * self.image)).T, 1, 1)
@@ -153,7 +157,7 @@ class Image_Lines():
         # 1) Calcola la differenza tra il primo angolo e l'angolo corrente ed evita che superi i 180 gradi
         angle_diff = abs(angle1 - angle2) % np.pi
         # 2) Verifica se la differenza è 90 gradi (entro una tolleranza)
-        return np.isclose(angle_diff, np.pi / 2, atol=1e-1)
+        return np.isclose(angle_diff, np.pi / 2, atol=5e-1)
 
     def best_line_combination(self):
         # 1) Ordino le linee in base a quanti pixels sono sovrapposti con il contorno
@@ -171,7 +175,7 @@ class Image_Lines():
         for index, _, _ in sorted_results:
             if self.is_perpendicular(self.lines[sorted_results[0][0]].angle, self.lines[index].angle):
                 print(f"La linea 0 e la linea {index} sono ortogonali")
-                print(sorted_results[0][0], index)
+                # print(sorted_results[0][0], index)
                 return sorted_results[0][0], index
             else:
                 print(f"La linea 0 e la linea {index} NON sono ortogonali")
@@ -233,10 +237,7 @@ class Image_Lines():
 
             return x, y
 
-
-
-
-    def plot_results(self, save_dir=None):
+    def plot_results(self):
         fig, axes = plt.subplots(1, 3, figsize=(15, 6))
         ax = axes.ravel()
 
@@ -303,8 +304,10 @@ class Image_Lines():
 
         plt.tight_layout()
 
-        if save_dir is not None:
-            plt.savefig(save_dir + 'hough_skimage.png', dpi=300)
+        if self.save_dir is not None:
+            plt.savefig(self.save_dir + 'hough_skimage.png', dpi=300)
+        else:
+            print("La cartella di salvataggio NON è stata impostata")
 
         plt.show()
 
@@ -363,7 +366,7 @@ def main():
     plt.imshow(prep.original_image)
     plt.title("original_image")
     plt.show()
-    print(prep.original_image.shape)
+    print("original_imag shape: ", prep.original_image.shape)
     processed_img = prep.preprocess_image(show_steps=False,
                                           apply_padding=True,
                                           median_filter_size=40,
@@ -372,10 +375,10 @@ def main():
 
     # serve perché l'edge detection fatta con Canny restituisce un'immagine di tipo bool
     processed_img = processed_img.astype(np.uint8) * 255
-    print(processed_img.shape)
+    print("preprocessed_img shape: ", processed_img.shape)
 
     # Trasformation through hough
-    image_lines = Image_Lines(processed_img)
+    image_lines = Image_Lines(processed_img, save_dir)
     image_lines.plot_results()
 
     return 0
