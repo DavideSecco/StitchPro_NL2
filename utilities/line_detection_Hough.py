@@ -114,7 +114,7 @@ class Image_Lines():
         self.h, self.theta, self.d = hough_line(self.image, theta=tested_angles)
 
         self.lines = self.hough_transform_skimage_implementation()
-        self.indexes_vert_horiz_lines = self.filter_horizontal_vertical_lines()
+        # self.indexes_vert_horiz_lines = self.filter_horizontal_vertical_lines()
 
         first, second = self.best_line_combination()
         self.find_intersection(first, second)
@@ -122,6 +122,8 @@ class Image_Lines():
         self.ant_points = self.extract_points_on_border(first)[2]
         self.pos_points = self.extract_points_on_border(second)[2]
         self.intersection = self.find_intersection(first, second)  # returns (x,y) coordinates of the intersection
+        # Questo non funziona, non è sempre l'ultimo elemento del vettore, alle volte è anche il primo
+        # penso il modo per farlo sia trovare il punto nei ant_point/pos_point più lontano da intersection
         self.end_ant_point, self.end_pos_point = (self.ant_points[-1], self.pos_points[-1])
 
         # DEBUGGING
@@ -160,9 +162,34 @@ class Image_Lines():
         return np.isclose(angle_diff, np.pi / 2, atol=5e-1)
 
     def best_line_combination(self):
-        # 1) Ordino le linee in base a quanti pixels sono sovrapposti con il contorno
+        """
+            # TODO: possibile miglioramento: tenere in condiderazione anche il valori di peaks della funzione hough
+            Function that returns the best two lines, considering the fact:
+                1. the two lines must be orithontal or vertical
+                2. the two lines must overlap with the mask (the more the better)
+                3. the two lines must be orthogonal each other
+
+            At the moment is not such a clever function, can be imporved.
+
+            :return: [int, int]
+                the index of the best promising lines
+        """
+        # 1) Filtriamo le linee che sono orizonatali e verticali
+        filtered_lines_index = []
+        for index, line in enumerate(self.lines, start=0):
+            # x0, y0, slope, angle = line
+            # Controllo per le linee verticali (|θ| ≈ π/2) e orizzontali (θ ≈ 0)
+            print("line", index, "angle", line.angle)
+            if abs(self.lines[index].angle) < np.pi / 36 or abs(
+                    self.lines[index].angle - np.pi / 2) < np.pi / 36 or abs(
+                self.lines[index].angle + np.pi / 2) < np.pi / 36:
+                # Aggiunge una condizione per controllare se la linea è nell'area in basso a sinistra
+                # if x0 < self.image.shape[1] / 2 and y0 < self.image.shape[0] / 2:
+                filtered_lines_index.append(index)
+
+        # 2) Ordino le linee in base a quanti pixels sono sovrapposti con il contorno
         results = []
-        for index in self.indexes_vert_horiz_lines:
+        for index in filtered_lines_index:
             results.append(self.extract_points_on_border(index))
 
         # Ordina sulla base del secondo valore di ciascuna tupla
@@ -171,35 +198,16 @@ class Image_Lines():
         for result in sorted_results:
             print(result[0], result[1])
 
-        # 2) Contrllo che le linee trovate siano perperndicolari fra loro:
+        # 3) Contrllo che le linee trovate siano perperndicolari fra loro:
         for index, _, _ in sorted_results:
             if self.is_perpendicular(self.lines[sorted_results[0][0]].angle, self.lines[index].angle):
-                print(f"La linea 0 e la linea {index} sono ortogonali")
-                # print(sorted_results[0][0], index)
+                print(f"La linea {sorted_results[0][0]} e la linea {index} sono ortogonali")
                 return sorted_results[0][0], index
             else:
-                print(f"La linea 0 e la linea {index} NON sono ortogonali")
+                print(f"La linea {sorted_results[0][0]} e la linea {index} NON sono ortogonali")
 
+        # Invece di ritornare questo, andrebbe ritornato un messaggio di errore nel caso non si trovi nulla
         return sorted_results[0][0], sorted_results[1][0]
-
-    def filter_horizontal_vertical_lines(self):
-        """
-        Funzione che filtra le linee verticali ed orizzontali che si incrociano in un certo angolo della figura
-        :param image: frammento
-        :param lines:
-        :return:
-        """
-        filtered_lines = []
-        for index, line in enumerate(self.lines, start=0):
-            # x0, y0, slope, angle = line
-            # Controllo per le linee verticali (|θ| ≈ π/2) e orizzontali (θ ≈ 0)
-            print("line", index, "angle", line.angle)
-            if abs(self.lines[index].angle) < np.pi / 36 or abs(self.lines[index].angle - np.pi / 2) < np.pi / 36 or abs(self.lines[index].angle + np.pi / 2) < np.pi / 36:
-                # Aggiunge una condizione per controllare se la linea è nell'area in basso a sinistra
-                # if x0 < self.image.shape[1] / 2 and y0 < self.image.shape[0] / 2:
-                    filtered_lines.append(index)
-
-        return filtered_lines
 
     def find_intersection(self, first, second):
         """
