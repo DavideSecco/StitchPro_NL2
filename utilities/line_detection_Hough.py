@@ -5,6 +5,7 @@ import cv2 as cv
 import matplotlib.pyplot as plt
 import numpy as np
 from skimage.transform import hough_line, hough_line_peaks
+import math
 
 
 class Line():
@@ -124,8 +125,9 @@ class Image_Lines():
         self.intersection = self.find_intersection(first, second)  # returns (x,y) coordinates of the intersection
         # Questo non funziona, non è sempre l'ultimo elemento del vettore, alle volte è anche il primo
         # penso il modo per farlo sia trovare il punto nei ant_point/pos_point più lontano da intersection
-        self.end_ant_point, self.end_pos_point = (self.ant_points[-1], self.pos_points[-1])
-
+        # self.end_ant_point, self.end_pos_point = (self.ant_points[-1], self.pos_points[-1])
+        # Questo non è il metodo migliore per trovare la fine dei lati, ma è il più pratico
+        self.end_ant_point, self.end_pos_point = self.farthest_point(self.ant_points), self.farthest_point(self.pos_points)
         # DEBUGGING
         print("end_points: ", self.end_ant_point, self.end_pos_point)
 
@@ -179,14 +181,22 @@ class Image_Lines():
         for index, line in enumerate(self.lines, start=0):
             # x0, y0, slope, angle = line
             # Controllo per le linee verticali (|θ| ≈ π/2) e orizzontali (θ ≈ 0)
-            print("line", index, "angle", line.angle)
-            if abs(self.lines[index].angle) < np.pi / 36 or abs(
-                    self.lines[index].angle - np.pi / 2) < np.pi / 36 or abs(
-                self.lines[index].angle + np.pi / 2) < np.pi / 36:
+            print("line", index, "angle", self.lines[index].angle)
+            if (abs(self.lines[index].angle) < np.pi / 20 or
+                abs(self.lines[index].angle - np.pi / 2) < np.pi / 20 or
+                abs(self.lines[index].angle + np.pi / 2) < np.pi / 20):
                 # Aggiunge una condizione per controllare se la linea è nell'area in basso a sinistra
                 # if x0 < self.image.shape[1] / 2 and y0 < self.image.shape[0] / 2:
                 filtered_lines_index.append(index)
+                print("added")
+            else:
+                print("Why:")
+                print("Angle:", abs(self.lines[index].angle), " > np.pi/20: ", np.pi /20)
+                print("Angle - np.pi/2: ", abs(self.lines[index].angle - np.pi / 2), " > np.pi/20: ", np.pi / 20)
+                print("Angle + np.pi/2: ", abs(self.lines[index].angle + np.pi / 2), " > np.pi/20: ", np.pi / 20)
 
+
+        print("filtered_lines_index:", filtered_lines_index)
         # 2) Ordino le linee in base a quanti pixels sono sovrapposti con il contorno
         results = []
         for index in filtered_lines_index:
@@ -194,6 +204,8 @@ class Image_Lines():
 
         # Ordina sulla base del secondo valore di ciascuna tupla
         sorted_results = sorted(results, key=lambda x: x[1], reverse=True)
+        print("results found: ", len(results))
+        print("sorted results found: ",len(sorted_results))
         print("Best lines:")
         for result in sorted_results:
             print(result[0], result[1])
@@ -244,6 +256,22 @@ class Image_Lines():
             print("Intersection point found: ", x, y)
 
             return x, y
+
+
+
+
+    # Function to find the farthest point
+    def farthest_point(self, points_array):
+        max_distance = 0
+        farthest = None
+
+        for point in points_array:
+            distance = math.sqrt((point[0] - self.intersection[0]) ** 2 + (point[1] - self.intersection[1]) ** 2)
+            if distance > max_distance:
+                max_distance = distance
+                farthest = point
+
+        return farthest
 
     def plot_results(self):
         fig, axes = plt.subplots(1, 3, figsize=(15, 6))
