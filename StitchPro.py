@@ -323,8 +323,10 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             except OSError as e:
                 print(f"Errore nella creazione della cartella: {e}")
 
+            plt.figure(figsize=(50, 50))
             plt.imshow(x, cmap='gray')  # DEBUGGING
             plt.savefig(os.path.join(save_dir, f'{files[i]}_tissue_mask.png'))
+            plt.figure(figsize=(50, 50))
             plt.imshow(x_out, cmap='gray')
             plt.savefig(os.path.join(save_dir, f'{files[i]}_tissue_mask_closed.png'))
 
@@ -351,6 +353,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             cv2.drawContours(x, [hull], -1, 1, -1)
 
             # DEBUGGING
+            plt.figure(figsize=(50, 50))
             plt.imshow(x, cmap='gray')
             plt.savefig(os.path.join(save_dir, f'{files[i]}_debugging_x_contours.png'))
 
@@ -507,6 +510,34 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
                 "pos_line": np.array([[int(cx), int(cy)], np.int32(point_pos[0][::-1])]),
                 "ant_points": ant_points,
                 "pos_points": pos_points})
+
+            print("Riassunto dati trovati trovati per quadrante:", data_dict[i]["quadrant"])
+            print("image shape:", data_dict[i]["image"].shape)
+            print("tissue_mask:", data_dict[i]["tissue_mask"].shape)
+            print("tissue_mask_closed:", data_dict[i]["tissue_mask_closed"].shape)
+            print("ant_line:", data_dict[i]["ant_line"])
+            print("pos_line", data_dict[i]["pos_line"])
+            # print("data_dict: ", data_dict)
+
+            # Crea una figura con 3 sottotrame
+            fig, axs = plt.subplots(1, 3, figsize=(15, 5))  # 1 riga, 3 colonne
+            ax = axs.ravel()
+            # Visualizza ciascuna immagine in una sottotrama
+            ax[0].imshow(data_dict[i]["image"])
+            ax[0].axis('off')  # Nasconde gli assi opzionale
+
+            ax[1].imshow(data_dict[i]["tissue_mask"], cmap="gray")
+            ax[1].axis('off')
+
+            ax[2].imshow(data_dict[i]["tissue_mask_closed"], cmap="gray")
+            ax[2].axis('off')
+
+            plt.tight_layout()
+
+            plt.savefig(os.path.join(save_dir, 'data_dict_vanilla'), dpi=300)
+
+            # Mostra la visualizzazione con le tre immagini
+            plt.show()
 
         print(cx, cy)
 
