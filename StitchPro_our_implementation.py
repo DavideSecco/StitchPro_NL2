@@ -32,6 +32,7 @@ import argparse
 import tifffile
 from tiatoolbox.wsicore import WSIReader
 import time
+import json
 
 import matplotlib.pyplot as plt # DEBUGGING
 
@@ -213,7 +214,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
 
     ## Apply median filter to reduce the noise
     median_filter_ur_x = st.slider('Median filter size for UR', 5, 50, 20)
-    median_filter_lr_x = st.slider('Median filter size for BR', 5, 50, 20)
+    median_filter_lr_x = st.slider('Median filter size for BR', 5, 50, 35)
     median_filter_ll_x = st.slider('Median filter size for BL', 5, 50, 20)
     median_filter_ul_x = st.slider('Median filter size for UL', 5, 50, 20)
     image_thresholded_filtered_ul = ndi.median_filter(image_thresholded_ul, size=int(median_filter_ul_x))
@@ -223,7 +224,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
 
     ## Erode the image to eliminate holes
     closing_ur_x = st.slider('Binary closing footprint for UR', 5, 50, 15)
-    closing_lr_x = st.slider('Binary closing footprint for BR', 5, 50, 15)
+    closing_lr_x = st.slider('Binary closing footprint for BR', 5, 50, 35)
     closing_ll_x = st.slider('Binary closing footprint for BL', 5, 50, 15)
     closing_ul_x = st.slider('Binary closing footprint for UL', 5, 50, 15)
     image_thresholded_filtered_closed_ul = morphology.binary_closing(image_thresholded_filtered_ul,
@@ -245,8 +246,8 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
     canny_edges_ll = canny(image_thresholded_filtered_closed_ll, sigma=5)
     canny_edges_lr = canny(image_thresholded_filtered_closed_lr, sigma=5)
 
-    if st.button("Start stitching!")==True:
-
+    # if st.button("Start stitching!")==True:
+    if True:
 
         data_dict = []
         # Tissue masks are the 'closed-masks' (see the iamge saved for details)
@@ -297,6 +298,38 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
                 "ant_points": image_lines.ant_points,
                 "pos_points": image_lines.pos_points})
             print("\n")
+
+            # Doesn't work since there is a nparray, can be fixed
+            # with open("data_dict.json", "w") as file:
+            #    json.dump(data_dict[i], file)
+
+            print("Riassunto dati trovati trovati per quadrante:", data_dict[i]["quadrant"])
+            print("image shape:", data_dict[i]["image"].shape)
+            print("tissue_mask:", data_dict[i]["tissue_mask"].shape)
+            print("tissue_mask_closed:", data_dict[i]["tissue_mask_closed"].shape)
+            print("ant_line:", data_dict[i]["ant_line"])
+            print("pos_line", data_dict[i]["pos_line"])
+            # print("data_dict: ", data_dict)
+
+            # Crea una figura con 3 sottotrame
+            fig, axs = plt.subplots(1, 3, figsize=(15, 5))  # 1 riga, 3 colonne
+            ax = axs.ravel()
+            # Visualizza ciascuna immagine in una sottotrama
+            ax[0].imshow(data_dict[i]["image"])
+            ax[0].axis('off')  # Nasconde gli assi opzionale
+
+            ax[1].imshow(data_dict[i]["tissue_mask"], cmap="gray")
+            ax[1].axis('off')
+
+            ax[2].imshow(data_dict[i]["tissue_mask_closed"], cmap="gray")
+            ax[2].axis('off')
+
+            plt.tight_layout()
+
+            plt.savefig(os.path.join(save_dir, 'data_dict'), dpi=300)
+
+            # Mostra la visualizzazione con le tre immagini
+            plt.show()
 
 
         ## Calculate histograms and distances between histograms
