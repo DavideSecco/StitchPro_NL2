@@ -63,10 +63,18 @@ st.sidebar.write("Intermediate steps viewer:")
 start_time = time.time()
 
 ## Upload images and rotate them by given angle
-img_file_buffer_ur = st.file_uploader("Upper-right (UR) fragment:", type=["tiff"])
-img_file_buffer_lr = st.file_uploader("Bottom-right (BR) fragment:", type=["tiff"])
-img_file_buffer_ll = st.file_uploader("Bottom-left (BL) fragment:", type=["tiff"])
-img_file_buffer_ul = st.file_uploader("Upper-left (UL) fragment:", type=["tiff"])
+
+
+if os.path.exists("/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/StitchPro/test-data/"):
+    img_file_buffer_ur = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/StitchPro/test-data/ur.tif"
+    img_file_buffer_lr = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/StitchPro/test-data/lr-rotated.tif"
+    img_file_buffer_ll = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/StitchPro/test-data/ll-rotated.tif"
+    img_file_buffer_ul = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/StitchPro/test-data/ul.tif"
+else:
+    img_file_buffer_ur = st.file_uploader("Upper-right (UR) fragment:", type=["tiff"])
+    img_file_buffer_lr = st.file_uploader("Bottom-right (BR) fragment:", type=["tiff"])
+    img_file_buffer_ll = st.file_uploader("Bottom-left (BL) fragment:", type=["tiff"])
+    img_file_buffer_ul = st.file_uploader("Upper-left (UL) fragment:", type=["tiff"])
 
 if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_file_buffer_ll is not None) & (img_file_buffer_ul is not None):
 
