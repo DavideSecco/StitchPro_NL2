@@ -330,7 +330,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             data_dict[i]['pos_points'] = np.array(data_dict[i]['pos_points'])
 
             # Crea una figura con 3 sottotrame
-            fig, axs = plt.subplots(1, 3, figsize=(15, 5))  # 1 riga, 3 colonne
+            fig, axs = plt.subplots(2, 3, figsize=(15, 5))  # 1 riga, 3 colonne
             ax = axs.ravel()
             # Visualizza ciascuna immagine in una sottotrama
             ax[0].imshow(data_dict[i]["image"])
@@ -342,12 +342,33 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             ax[2].imshow(data_dict[i]["tissue_mask_closed"], cmap="gray")
             ax[2].axis('off')
 
+            # Mostra la visualizzazione con le tre immagini
+            # plt.show()
+
+            # Stampo i punti
+            # aux_mask = cv2.cvtColor(aux_mask, cv2.COLOR_GRAY2RGB)
+            aux_mask = data_dict[i]["tissue_mask_closed"]
+            # Convert aux_mask from CV_32S to CV_8U
+            aux_mask = aux_mask.astype(np.uint8)
+            aux_mask = cv2.cvtColor(aux_mask, cv2.COLOR_GRAY2RGB)
+            # disegna i punti per sola visualizzazione
+            for point in data_dict[i]['ant_points']:
+                cv2.drawMarker(aux_mask, tuple(point), color=(255, 255, 255), markerType=cv2.MARKER_SQUARE, markerSize=3, thickness=2)
+
+            for point in data_dict[i]['pos_points']:
+                cv2.drawMarker(aux_mask, tuple(point), color=(155, 155, 15), markerType=cv2.MARKER_SQUARE, markerSize=3, thickness=2)
+
+            ax[3].imshow(aux_mask)
+            ax[3].set_title("Contorni")
+
+            aux_mask2 = data_dict[i]["tissue_mask_closed"]
+            ax[4].imshow(aux_mask2)
+            # Plot the line over the image
+            ax[4].plot(data_dict[i]["ant_line"][0], data_dict[i]["ant_line"][1], color='red', linewidth=2, marker='o')
+
             plt.tight_layout()
 
             plt.savefig(os.path.join(save_dir, 'data_dict'), dpi=300)
-
-            # Mostra la visualizzazione con le tre immagini
-            plt.show()
 
 
         ## Calculate histograms and distances between histograms
