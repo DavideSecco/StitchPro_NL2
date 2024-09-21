@@ -103,9 +103,14 @@ class Image_Lines():
     ------------
 
     """
-    def __init__(self, image, save_dir):
-        self.image = image
+    def __init__(self, orig_image, image, save_dir):
+        self.original_image = orig_image
+        print("Tipo immagine", type(image.dtype))
+
+        # se l'immagine è booleana convertila in scala di grigi
+        self.image = image.astype(np.uint8) * 255 if image.dtype == np.bool_ else image
         self.save_dir = save_dir
+
         # QUESTO PEZZO SI PUO' SPOSTARE NELLA FUNZIONE NEL CASO SI DECIDA CHE IL GRAFICO DELLA TRASFORMATA NON SERVE
         # Create of an array of angles from -90° to 90°, divided in 360 steps: are the tested angles in hough transformation.
         tested_angles = np.linspace(-np.pi / 2, np.pi / 2, 360, endpoint=False)
@@ -304,6 +309,8 @@ class Image_Lines():
 
         # 2 Immagine:
         cv.drawMarker(self.image, self.intersection, (200, 255, 200), cv.MARKER_STAR, 10, 4)
+        cv.drawMarker(self.image, self.end_ant_point, (200, 255, 200), cv.MARKER_STAR, 10, 4)
+        cv.drawMarker(self.image, self.end_pos_point, (200, 255, 200), cv.MARKER_STAR, 10, 4)
         ax[1].imshow(self.image, cmap='gray')
         ax[1].set_ylim((self.image.shape[0], 0))
         # ax[2].set_axis_off()
@@ -341,7 +348,7 @@ class Image_Lines():
         plt.tight_layout()
 
         if self.save_dir is not None:
-            plt.savefig(self.save_dir + 'hough_skimage.png', dpi=300)
+            plt.savefig(os.path.join(self.save_dir, 'hough_skimage.png'), dpi=300)
         else:
             print("La cartella di salvataggio NON è stata impostata")
 
@@ -414,7 +421,7 @@ def main():
     print("preprocessed_img shape: ", processed_img.shape)
 
     # Trasformation through hough
-    image_lines = Image_Lines(processed_img, save_dir)
+    image_lines = Image_Lines(prep.original_image, processed_img, save_dir)
     image_lines.plot_results()
 
     return 0
