@@ -299,10 +299,6 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
                 "pos_points": image_lines.pos_points})
             print("\n")
 
-            # Doesn't work since there is a nparray, can be fixed
-            # with open("data_dict.json", "w") as file:
-            #    json.dump(data_dict[i], file)
-
             print("Riassunto dati trovati trovati per quadrante:", data_dict[i]["quadrant"])
             print("image shape:", data_dict[i]["image"].shape)
             print("tissue_mask:", data_dict[i]["tissue_mask"].shape)
@@ -310,6 +306,28 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             print("ant_line:", data_dict[i]["ant_line"])
             print("pos_line", data_dict[i]["pos_line"])
             # print("data_dict: ", data_dict)
+
+            # COnversion needed since you can't save a nparray in a json file
+            data_dict[i]['image'] = data_dict[i]['image'].tolist()
+            data_dict[i]['tissue_mask'] = data_dict[i]['tissue_mask'].tolist()
+            data_dict[i]['tissue_mask_closed'] = data_dict[i]['tissue_mask_closed'].tolist()
+            data_dict[i]['ant_line'] = data_dict[i]['ant_line'].tolist()
+            data_dict[i]['pos_line'] = data_dict[i]['pos_line'].tolist()
+            data_dict[i]['ant_points'] = data_dict[i]['ant_points'].tolist()
+            data_dict[i]['pos_points'] = data_dict[i]['pos_points'].tolist()
+
+            # Save as json
+            with open(os.path.join(save_dir, "data_dict.json"), "w") as file:
+                json.dump(data_dict[i], file)
+
+            # Li faccio tornare nparray perchè serve cosi dopo
+            data_dict[i]['image'] = np.array(data_dict[i]['image'])
+            data_dict[i]['tissue_mask'] = np.array(data_dict[i]['tissue_mask'])
+            data_dict[i]['tissue_mask_closed'] = np.array(data_dict[i]['tissue_mask_closed'])
+            data_dict[i]['ant_line'] = np.array(data_dict[i]['ant_line'])
+            data_dict[i]['pos_line'] = np.array(data_dict[i]['pos_line'])
+            data_dict[i]['ant_points'] = np.array(data_dict[i]['ant_points'])
+            data_dict[i]['pos_points'] = np.array(data_dict[i]['pos_points'])
 
             # Crea una figura con 3 sottotrame
             fig, axs = plt.subplots(1, 3, figsize=(15, 5))  # 1 riga, 3 colonne
@@ -591,6 +609,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
                 output_d[im[:, :, :] > 0] += 1
 
             # DEBUGGING
+            plt.figure()
             plt.imshow(output)
             plt.savefig(os.path.join(root_folder, 'debug', 'pre_output.png'))
 
