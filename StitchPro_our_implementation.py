@@ -43,7 +43,7 @@ from utilities import Preprocessing, Line, Image_Lines
 # Names
 files = ["upper_right", "bottom_right", "bottom_left", "upper_left"]
 root_folder = os.getcwd()
-
+print(f"root_folder: {root_folder}")
 # DEBUGGING
 # create folder
 save_dir = os.path.join(root_folder, 'debug')
@@ -71,6 +71,11 @@ if os.path.exists("/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/Multudis
     img_file_buffer_lr = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/StitchPro/test-data/lr-rotated.tif"
     img_file_buffer_ll = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/StitchPro/test-data/ll-rotated.tif"
     img_file_buffer_ul = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/StitchPro/test-data/ul.tif"
+elif os.path.exists(r"C:\Users\dicia\NL2_project\datasets\test-data-corretto"):
+    img_file_buffer_ur = r"C:\Users\dicia\NL2_project\datasets\test-data-corretto\ur.tif"
+    img_file_buffer_lr = r"C:\Users\dicia\NL2_project\datasets\test-data-corretto\lr-rotated.tif"
+    img_file_buffer_ll = r"C:\Users\dicia\NL2_project\datasets\test-data-corretto\ll-rotated.tif"
+    img_file_buffer_ul = r"C:\Users\dicia\NL2_project\datasets\test-data-corretto\ul.tif"
 else:
     img_file_buffer_ur = st.file_uploader("Upper-right (UR) fragment:", type=["tiff"])
     img_file_buffer_lr = st.file_uploader("Bottom-right (BR) fragment:", type=["tiff"])
@@ -355,10 +360,10 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             aux_mask = cv2.cvtColor(aux_mask, cv2.COLOR_GRAY2RGB)
             # disegna i punti per sola visualizzazione
             for point in data_dict[i]['ant_points']:
-                cv2.drawMarker(aux_mask, tuple(point), color=(255, 255, 255), markerType=cv2.MARKER_SQUARE, markerSize=3, thickness=2)
+                cv2.drawMarker(aux_mask, tuple(point), color=(255, 255, 0), markerType=cv2.MARKER_SQUARE, markerSize=3, thickness=2)
 
             for point in data_dict[i]['pos_points']:
-                cv2.drawMarker(aux_mask, tuple(point), color=(155, 155, 15), markerType=cv2.MARKER_SQUARE, markerSize=3, thickness=2)
+                cv2.drawMarker(aux_mask, tuple(point), color=(255, 0, 0), markerType=cv2.MARKER_SQUARE, markerSize=3, thickness=2)
 
             ax[3].imshow(aux_mask)
             ax[3].set_title("Contorni")
