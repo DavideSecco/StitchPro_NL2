@@ -384,8 +384,8 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             aux_mask2 = data_dict[i]["tissue_mask_closed"]
             ax[4].imshow(aux_mask2)
             # Plot the line over the image
-            ax[4].axline(data_dict[i]["ant_line"][0], xy2=data_dict[i]["ant_line"][1], color='red', linewidth=2, marker='o')
-            ax[4].axline(data_dict[i]["pos_line"][0], xy2=data_dict[i]["pos_line"][1], color='blue', linewidth=2, marker='o')
+            ax[4].axline(data_dict[i]["ant_line"][0], xy2=data_dict[i]["ant_line"][1], color='yellow', linewidth=2, marker='o')
+            ax[4].axline(data_dict[i]["pos_line"][0], xy2=data_dict[i]["pos_line"][1], color='red', linewidth=2, marker='o')
 
             plt.tight_layout()
 
