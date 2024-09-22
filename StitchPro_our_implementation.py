@@ -266,7 +266,6 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             # DEBUGGING
             # create folder
             save_dir = os.path.join(root_folder, 'debug', files[i])
-            print("working directory ... ", os.getcwd())
             try:
                 os.makedirs(save_dir, exist_ok=True)
                 print(f"Cartella '{save_dir}' creata con successo")
@@ -308,9 +307,9 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             # print("data_dict: ", data_dict)
 
             # COnversion needed since you can't save a nparray in a json file
-            data_dict[i]['image'] = data_dict[i]['image'].tolist()
-            data_dict[i]['tissue_mask'] = data_dict[i]['tissue_mask'].tolist()
-            data_dict[i]['tissue_mask_closed'] = data_dict[i]['tissue_mask_closed'].tolist()
+            # data_dict[i]['image'] = data_dict[i]['image'].tolist()
+            # data_dict[i]['tissue_mask'] = data_dict[i]['tissue_mask'].tolist()
+            # data_dict[i]['tissue_mask_closed'] = data_dict[i]['tissue_mask_closed'].tolist()
             data_dict[i]['ant_line'] = data_dict[i]['ant_line'].tolist()
             data_dict[i]['pos_line'] = data_dict[i]['pos_line'].tolist()
             data_dict[i]['ant_points'] = data_dict[i]['ant_points'].tolist()
@@ -318,7 +317,10 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
 
             # Save as json
             with open(os.path.join(save_dir, "data_dict.json"), "w") as file:
-                json.dump(data_dict[i], file)
+                # json.dump(data_dict[i], file)
+                json.dump(dict((k, data_dict[i][k]) for k in ['ant_line', 'pos_line', 'ant_points', 'pos_points']),
+                          file,
+                          separators=(',', ': '))
 
             # Li faccio tornare nparray perchè serve cosi dopo
             data_dict[i]['image'] = np.array(data_dict[i]['image'])
@@ -371,9 +373,9 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
 
             plt.savefig(os.path.join(save_dir, 'data_dict'), dpi=300)
 
+############### FINE NOSTRA IMPLEMENTAZIONE #################################
 
         ## Calculate histograms and distances between histograms
-
         # set up functions to calculate colour histograms
         square_size = 64
         n_bins = 32
