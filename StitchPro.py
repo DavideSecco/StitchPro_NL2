@@ -569,11 +569,11 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             aux_mask = cv2.cvtColor(aux_mask, cv2.COLOR_GRAY2RGB)
             # disegna i punti per sola visualizzazione
             for point in data_dict[i]['ant_points']:
-                cv2.drawMarker(aux_mask, tuple(point), color=(255, 255, 255), markerType=cv2.MARKER_SQUARE,
+                cv2.drawMarker(aux_mask, tuple(point), color=(255, 255, 0), markerType=cv2.MARKER_SQUARE,
                                markerSize=3, thickness=2)
 
             for point in data_dict[i]['pos_points']:
-                cv2.drawMarker(aux_mask, tuple(point), color=(155, 155, 15), markerType=cv2.MARKER_SQUARE, markerSize=3,
+                cv2.drawMarker(aux_mask, tuple(point), color=(255, 0, 0), markerType=cv2.MARKER_SQUARE, markerSize=3,
                                thickness=2)
 
             ax[3].imshow(aux_mask)
@@ -582,9 +582,9 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             aux_mask2 = data_dict[i]["tissue_mask_closed"]
             ax[4].imshow(aux_mask2)
             # Plot the line over the image
-            ax[4].axline(data_dict[i]["ant_line"][0], xy2=data_dict[i]["ant_line"][1], color='red', linewidth=2,
+            ax[4].axline(data_dict[i]["ant_line"][0], xy2=data_dict[i]["ant_line"][1], color='yellow', linewidth=2,
                          marker='o')
-            ax[4].axline(data_dict[i]["pos_line"][0], xy2=data_dict[i]["pos_line"][1], color='blue', linewidth=2,
+            ax[4].axline(data_dict[i]["pos_line"][0], xy2=data_dict[i]["pos_line"][1], color='red', linewidth=2,
                          marker='o')
 
             plt.tight_layout()
