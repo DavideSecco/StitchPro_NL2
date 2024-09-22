@@ -309,12 +309,21 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             print("tissue_mask_closed:", data_dict[i]["tissue_mask_closed"].shape)
             print("ant_line:", data_dict[i]["ant_line"])
             print("pos_line", data_dict[i]["pos_line"])
-            # print("data_dict: ", data_dict)
+
+            print("type data_dict: ", type(data_dict))
+            print(type(data_dict[i]["image"]))
+            print(type(data_dict[i]["tissue_mask"]))
+            print(type(data_dict[i]["tissue_mask_closed"]))
+            print(type(data_dict[i]["quadrant"]))
+            print(type(data_dict[i]["ant_line"]))
+            print(type(data_dict[i]["pos_line"]))
+            print(type(data_dict[i]["ant_points"]))
+            print(type(data_dict[i]["pos_points"]))
 
             # COnversion needed since you can't save a nparray in a json file
-            # data_dict[i]['image'] = data_dict[i]['image'].tolist()
-            # data_dict[i]['tissue_mask'] = data_dict[i]['tissue_mask'].tolist()
-            # data_dict[i]['tissue_mask_closed'] = data_dict[i]['tissue_mask_closed'].tolist()
+            data_dict[i]['image'] = data_dict[i]['image'].tolist()
+            data_dict[i]['tissue_mask'] = data_dict[i]['tissue_mask'].tolist()
+            data_dict[i]['tissue_mask_closed'] = data_dict[i]['tissue_mask_closed'].tolist()
             data_dict[i]['ant_line'] = data_dict[i]['ant_line'].tolist()
             data_dict[i]['pos_line'] = data_dict[i]['pos_line'].tolist()
             data_dict[i]['ant_points'] = data_dict[i]['ant_points'].tolist()
@@ -322,11 +331,15 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
 
             # Save as json
             with open(os.path.join(save_dir, "data_dict.json"), "w") as file:
-                # json.dump(data_dict[i], file)
-                json.dump(dict((k, data_dict[i][k]) for k in ['ant_line', 'pos_line', 'ant_points', 'pos_points']),
-                          file,
-                          separators=(',', ': '))
+                json.dump(data_dict[i], file)
+                # json.dump(dict((k, data_dict[i][k]) for k in ['ant_line', 'pos_line', 'ant_points', 'pos_points']), file,separators=(',', ': '))
 
+            # To load it back (it will load the array as a list)
+            with open(os.path.join(save_dir, "data_dict_fixed.json"), "r") as file:
+                data_dict[i] = json.load(file)
+                # loaded_dict['data'] = np.array(loaded_dict['data'])  # Convert back to ndarray
+
+            print(f"Keys in data_dict[{i}]: {list(data_dict[i].keys())}")
             # Li faccio tornare nparray perchè serve cosi dopo
             data_dict[i]['image'] = np.array(data_dict[i]['image'])
             data_dict[i]['tissue_mask'] = np.array(data_dict[i]['tissue_mask'])
@@ -377,6 +390,8 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             plt.tight_layout()
 
             plt.savefig(os.path.join(save_dir, 'data_dict'), dpi=300)
+
+            plt.close("all")
 
 ############### FINE NOSTRA IMPLEMENTAZIONE #################################
 
