@@ -655,7 +655,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             # DEBUGGING
             plt.figure()
             plt.imshow(output)
-            plt.savefig(os.path.join(root_folder, 'debug', 'pre_output.png'))
+            plt.savefig(os.path.join(root_folder, 'debug', 'pre_output_custom.png'))
 
 
 
@@ -701,7 +701,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
         # # new_spacing_y = original_size[1]*original_spacing[1]/new_size[1]
         new_spacing = (2 ** int(level)) * float(original_spacing)  # *(10**(-3))
         #
-        tifffile.imwrite(out_path + "output.tif", np.array(region), photometric='rgb', imagej=True,
+        tifffile.imwrite(out_path + "output_custom.tif", np.array(region), photometric='rgb', imagej=True,
                          resolution=(1 / new_spacing, 1 / new_spacing), metadata={'spacing': new_spacing, 'unit': 'um'})
         # # imageio.imwrite(args.output_path+"output.tif", output, format="tif")
 
