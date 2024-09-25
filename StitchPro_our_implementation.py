@@ -13,8 +13,6 @@ if hasattr(os, 'add_dll_directory'):
 else:
     import openslide
 
-
-
 import streamlit as st
 import imageio.v2 as imageio
 import matplotlib.pyplot as plt
@@ -94,12 +92,6 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
     histo_fragment_ul = imageio.imread(img_file_buffer_ul)
     st.sidebar.image(histo_fragment_ul, caption="UL fragment", use_column_width=True)
 
-    # print("Dimensioni originali immagini")
-    # print(histo_fragment_ur.shape)
-    # print(histo_fragment_lr.shape)
-    # print(histo_fragment_ll.shape)
-    # print(histo_fragment_ul.shape)
-
     # Rotate images if user use the option
     angle_options = [-90, 0, 90, 180]
     angle_choice_ur = st.selectbox("Angle to rotate the UR fragment", angle_options, index = 1)
@@ -160,12 +152,6 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
     histo_fragment_ul = rescale(histo_fragment_ul, 1 / DOWNSAMPLE_LEVEL, channel_axis=2,
                                 preserve_range=True).astype(np.uint8)
 
-    # print("Dimensioni dopo downsampling:")
-    # print(histo_fragment_ur.shape)
-    # print(histo_fragment_lr.shape)
-    # print(histo_fragment_ll.shape)
-    # print(histo_fragment_ul.shape)
-
     ### Find image contours
 
     ## Convert from RGB image to grayscale
@@ -178,12 +164,6 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
     histo_fragment_gray_ul = (histo_fragment_gray_binary_ul * 255).astype('uint8')
     histo_fragment_gray_binary_ur = color.rgb2gray(histo_fragment_ur)
     histo_fragment_gray_ur = (histo_fragment_gray_binary_ur * 255).astype('uint8')
-
-    # print("Dimensioni dopo grayscale:")
-    # print(histo_fragment_gray_ur.shape)
-    # print(histo_fragment_gray_lr.shape)
-    # print(histo_fragment_gray_ll.shape)
-    # print(histo_fragment_gray_ul.shape)
 
     plt.imshow(histo_fragment_gray_ll, cmap="gray")
     plt.savefig(os.path.join(save_dir, f'lower_left_gray_scale.png'))
@@ -251,8 +231,8 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
     canny_edges_ll = canny(image_thresholded_filtered_closed_ll, sigma=5)
     canny_edges_lr = canny(image_thresholded_filtered_closed_lr, sigma=5)
 
-    # if st.button("Start stitching!")==True:
-    if True:
+    if st.button("Start stitching!")==True:
+    # if True:
 
         data_dict = []
         # Tissue masks are the 'closed-masks' (see the iamge saved for details)
@@ -264,7 +244,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
         N = len(tissue_masks)
 
         for i in range(len(tissue_masks)):
-            print(f"Processing {files[i]} fragment ...")
+            print(f"Processing {files[i]} fragment ...\n")
             x = tissue_masks[i]
             x_out = tissue_masks_closed[i]
 
@@ -285,10 +265,9 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             plt.savefig(os.path.join(save_dir, f'{files[i]}_tissue_mask_closed.png'))
 
 ######################### INIZIO NOSTRA IMPLEMENTAZIONE ############################################
-            print("Tipi immagine: ", type(images[i][2, 3]), type(tissue_masks_closed[i][2, 3]))
+            # print("Tipi immagine: ", type(images[i][2, 3]), type(tissue_masks_closed[i][2, 3]))
             image_lines = Image_Lines(images[i], tissue_masks_closed[i], save_dir)
             image_lines.plot_results()
-            plt.close()
             ant_line = np.array([image_lines.intersection, image_lines.end_ant_point])
             pos_line = np.array([image_lines.intersection, image_lines.end_pos_point])
 
@@ -303,22 +282,22 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
                 "pos_points": image_lines.pos_points})
             print("\n")
 
-            print("Riassunto dati trovati trovati per quadrante:", data_dict[i]["quadrant"])
-            print("image shape:", data_dict[i]["image"].shape)
-            print("tissue_mask:", data_dict[i]["tissue_mask"].shape)
-            print("tissue_mask_closed:", data_dict[i]["tissue_mask_closed"].shape)
-            print("ant_line:", data_dict[i]["ant_line"])
-            print("pos_line", data_dict[i]["pos_line"])
+            # print("Riassunto dati trovati trovati per quadrante:", data_dict[i]["quadrant"])
+            # print("image shape:", data_dict[i]["image"].shape)
+            # print("tissue_mask:", data_dict[i]["tissue_mask"].shape)
+            # print("tissue_mask_closed:", data_dict[i]["tissue_mask_closed"].shape)
+            # print("ant_line:", data_dict[i]["ant_line"])
+            # print("pos_line", data_dict[i]["pos_line"])
 
-            print("type data_dict: ", type(data_dict))
-            print(type(data_dict[i]["image"]))
-            print(type(data_dict[i]["tissue_mask"]))
-            print(type(data_dict[i]["tissue_mask_closed"]))
-            print(type(data_dict[i]["quadrant"]))
-            print(type(data_dict[i]["ant_line"]))
-            print(type(data_dict[i]["pos_line"]))
-            print(type(data_dict[i]["ant_points"]))
-            print(type(data_dict[i]["pos_points"]))
+            # print("type data_dict: ", type(data_dict))
+            # print(type(data_dict[i]["image"]))
+            # print(type(data_dict[i]["tissue_mask"]))
+            # print(type(data_dict[i]["tissue_mask_closed"]))
+            # print(type(data_dict[i]["quadrant"]))
+            # print(type(data_dict[i]["ant_line"]))
+            # print(type(data_dict[i]["pos_line"]))
+            # print(type(data_dict[i]["ant_points"]))
+            # print(type(data_dict[i]["pos_points"]))
 
             # COnversion needed since you can't save a nparray in a json file
             data_dict[i]['image'] = data_dict[i]['image'].tolist()
@@ -332,14 +311,25 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             # Save as json
             with open(os.path.join(save_dir, "data_dict.json"), "w") as file:
                 json.dump(data_dict[i], file)
-                # json.dump(dict((k, data_dict[i][k]) for k in ['ant_line', 'pos_line', 'ant_points', 'pos_points']), file,separators=(',', ': '))
+                #  json.dump(dict((k, data_dict[i][k]) for k in ['ant_line', 'pos_line', 'ant_points', 'pos_points']), file,separators=(',', ': '))
 
-            # To load it back (it will load the array as a list)
-            with open(os.path.join(save_dir, "data_dict_fixed.json"), "r") as file:
-                data_dict[i] = json.load(file)
-                # loaded_dict['data'] = np.array(loaded_dict['data'])  # Convert back to ndarray
+            # modo diverso di caricare su i json files fixati
+            paolo_path = r"C:\Users\dicia\NL2_project\debugging_series\restults_comparison\fixed_dicts"
+            if os.path.exists(paolo_path) and os.path.isdir(paolo_path):
+                filepath = f"data_dict_fixed_{i}.json"
+                try:
+                    with open(os.path.join(paolo_path, filepath), "r") as file:
+                        data_dict[i] = json.load(file)
+                except FileNotFoundError:
+                    print(f"file {os.path.join(paolo_path, filepath)} non trovato")
+                except json.JSONDecodeError:
+                    print(f"errore nella decodifica del file json {os.path.join(paolo_path, filepath)}")
+            else:  # To load it back (it will load the array as a list)
+                with open(os.path.join(save_dir, "data_dict_fixed.json"), "r") as file:
+                    data_dict[i] = json.load(file)
+                    # loaded_dict['data'] = np.array(loaded_dict['data'])  # Convert back to ndarray
 
-            print(f"Keys in data_dict[{i}]: {list(data_dict[i].keys())}")
+            # print(f"Keys in data_dict[{i}]: {list(data_dict[i].keys())}")
             # Li faccio tornare nparray perchè serve cosi dopo
             data_dict[i]['image'] = np.array(data_dict[i]['image'])
             data_dict[i]['tissue_mask'] = np.array(data_dict[i]['tissue_mask'])

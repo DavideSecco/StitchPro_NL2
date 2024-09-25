@@ -105,12 +105,9 @@ class Image_Lines():
     """
     def __init__(self, orig_image, image, save_dir):
         self.original_image = orig_image
-        print("Tipo immagine", type(image.dtype))
-
         # se l'immagine è booleana convertila in scala di grigi
         self.image = image.astype(np.uint8) * 255 if image.dtype == np.bool_ else image
         self.save_dir = save_dir
-
         # QUESTO PEZZO SI PUO' SPOSTARE NELLA FUNZIONE NEL CASO SI DECIDA CHE IL GRAFICO DELLA TRASFORMATA NON SERVE
         # Create of an array of angles from -90° to 90°, divided in 360 steps: are the tested angles in hough transformation.
         tested_angles = np.linspace(-np.pi / 2, np.pi / 2, 360, endpoint=False)
@@ -139,7 +136,7 @@ class Image_Lines():
     def hough_transform_skimage_implementation(self):
         threshold = 1
         peaks = hough_line_peaks(self.h, self.theta, self.d, threshold=threshold * np.max(self.h))
-
+        print("\nperforming hough transform...")
         while len(peaks[0]) < 4:
             threshold *= 0.9
             peaks = hough_line_peaks(self.h, self.theta, self.d, threshold = threshold * np.max(self.h))
@@ -183,6 +180,7 @@ class Image_Lines():
         """
         # 1) Filtriamo le linee che sono orizonatali e verticali
         filtered_lines_index = []
+        print("\nfinding best line combination ...")
         for index, line in enumerate(self.lines, start=0):
             # x0, y0, slope, angle = line
             # Controllo per le linee verticali (|θ| ≈ π/2) e orizzontali (θ ≈ 0)
@@ -199,11 +197,13 @@ class Image_Lines():
                 print("Angle:", abs(self.lines[index].angle), " > np.pi/20: ", np.pi /20)
                 print("Angle - np.pi/2: ", abs(self.lines[index].angle - np.pi / 2), " > np.pi/20: ", np.pi / 20)
                 print("Angle + np.pi/2: ", abs(self.lines[index].angle + np.pi / 2), " > np.pi/20: ", np.pi / 20)
+                print("\n")
 
 
-        print("filtered_lines_index:", filtered_lines_index)
+        # print("filtered_lines_index:", filtered_lines_index)
         # 2) Ordino le linee in base a quanti pixels sono sovrapposti con il contorno
         results = []
+        print("\nlinee sovrapposte al contorno...")
         for index in filtered_lines_index:
             results.append(self.extract_points_on_border(index))
 
@@ -351,8 +351,8 @@ class Image_Lines():
             plt.savefig(os.path.join(self.save_dir, 'hough_skimage.png'), dpi=300)
         else:
             print("La cartella di salvataggio NON è stata impostata")
-
-        plt.show()
+        if show_in_place:
+            plt.show()
 
 
 def main():
@@ -428,4 +428,7 @@ def main():
 
 
 if __name__ == "__main__":
+    show_in_place = 1
     main()
+else:
+    show_in_place = 0
