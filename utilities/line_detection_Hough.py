@@ -120,7 +120,6 @@ class Image_Lines():
         # self.indexes_vert_horiz_lines = self.filter_horizontal_vertical_lines()
 
         first, second = self.best_line_combination()
-        self.find_intersection(first, second)
 
         self.ant_points = self.extract_points_on_border(first)[2]
         self.pos_points = self.extract_points_on_border(second)[2]
@@ -132,6 +131,8 @@ class Image_Lines():
         self.end_ant_point, self.end_pos_point = self.farthest_point(self.ant_points), self.farthest_point(self.pos_points)
         # DEBUGGING
         print("end_points: ", self.end_ant_point, self.end_pos_point)
+
+        self.identify_quadrant()
 
     def hough_transform_skimage_implementation(self):
         threshold = 1
@@ -260,10 +261,8 @@ class Image_Lines():
             y = int((p1 * q3 - q1 * p3)/det)
             print("Intersection point found: ", x, y)
 
-            return x, y
-
-
-
+            # Ritorno (y,x) cosi che sia coerente con la funzione shape
+            return y, x
 
     # Function to find the farthest point
     def farthest_point(self, points_array):
@@ -354,6 +353,25 @@ class Image_Lines():
         if show_in_place:
             plt.show()
 
+    def identify_quadrant(self):
+        print("self.intersection: ", self.intersection)
+        print("self.image.shape[0]:", self.image.shape[0])
+        print("self.image.shape[1]:", self.image.shape[1])
+
+        # 1) capire in che zona è l'intersezione cosi da identificare la posizione del frammento
+        if self.intersection[0] >= int(self.image.shape[0] / 2) and self.intersection[1] >= int(self.image.shape[1] / 2):
+            print("Intersezione trovata in basso a dx - Frammento UL")
+            return "UL"
+        elif self.intersection[0] <= int(self.image.shape[0] / 2) and self.intersection[1] >= int(self.image.shape[1] / 2):
+            print("Intersezione trovata in alto a dx - Frammento LL")
+            return "BL"
+        elif self.intersection[0] <= int(self.image.shape[0] / 2) and self.intersection[1] <= int(self.image.shape[1] / 2):
+            print("Intersezione trovata in alto a sx - Frammento LR")
+            return "BR"
+        # In Basso e a Sx
+        elif self.intersection[0] >= int(self.image.shape[0] / 2) and self.intersection[1] <= int(self.image.shape[1] / 2):
+            print("Intersezione troavta in basso a Sx - Frammento UR")
+            return "UR"
 
 def main():
     from preprocessing import Preprocessing
