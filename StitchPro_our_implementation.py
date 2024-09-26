@@ -70,10 +70,10 @@ if os.path.exists("/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/Multudis
     img_file_buffer_ll = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/StitchPro/test-data/ll-rotated.tif"
     img_file_buffer_ul = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/StitchPro/test-data/ul.tif"
 elif os.path.exists(r"C:\Users\dicia\NL2_project\datasets\test-data-corretto"):
-    img_file_buffer_ur = r"C:\Users\dicia\NL2_project\datasets\test-data-corretto\ur.tif"
-    img_file_buffer_lr = r"C:\Users\dicia\NL2_project\datasets\test-data-corretto\lr-rotated.tif"
-    img_file_buffer_ll = r"C:\Users\dicia\NL2_project\datasets\test-data-corretto\ll-rotated.tif"
-    img_file_buffer_ul = r"C:\Users\dicia\NL2_project\datasets\test-data-corretto\ul.tif"
+    img_file_buffer_ur = r"C:\Users\dicia\NL2_project\datasets\downsampled\downsampled_2\upper_right.tif"
+    img_file_buffer_lr = r"C:\Users\dicia\NL2_project\datasets\downsampled\downsampled_2\bottom_right.tif"
+    img_file_buffer_ll = r"C:\Users\dicia\NL2_project\datasets\downsampled\downsampled_2\bottom_left.tif"
+    img_file_buffer_ul = r"C:\Users\dicia\NL2_project\datasets\downsampled\downsampled_2\upper_left.tif"
 else:
     img_file_buffer_ur = st.file_uploader("Upper-right (UR) fragment:", type=["tiff"])
     img_file_buffer_lr = st.file_uploader("Bottom-right (BR) fragment:", type=["tiff"])
@@ -313,21 +313,22 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
                 json.dump(data_dict[i], file)
                 #  json.dump(dict((k, data_dict[i][k]) for k in ['ant_line', 'pos_line', 'ant_points', 'pos_points']), file,separators=(',', ': '))
 
-            # modo diverso di caricare su i json files fixati
-            paolo_path = r"C:\Users\dicia\NL2_project\debugging_series\restults_comparison\fixed_dicts"
-            if os.path.exists(paolo_path) and os.path.isdir(paolo_path):
-                filepath = f"data_dict_fixed_{i}.json"
-                try:
-                    with open(os.path.join(paolo_path, filepath), "r") as file:
+            load_fixed_dicts = True
+            if load_fixed_dicts: # modo diverso di caricare su i json files fixati
+                paolo_path = r"C:\Users\dicia\NL2_project\debugging_series\restults_comparison\fixed_dicts\ciao"
+                if os.path.exists(paolo_path) and os.path.isdir(paolo_path):
+                    filepath = f"data_dict_fixed_{i}.json"
+                    try:
+                        with open(os.path.join(paolo_path, filepath), "r") as file:
+                            data_dict[i] = json.load(file)
+                    except FileNotFoundError:
+                        print(f"file {os.path.join(paolo_path, filepath)} non trovato")
+                    except json.JSONDecodeError:
+                        print(f"errore nella decodifica del file json {os.path.join(paolo_path, filepath)}")
+                else:  # To load it back (it will load the array as a list)
+                    with open(os.path.join(save_dir, "data_dict_fixed.json"), "r") as file:
                         data_dict[i] = json.load(file)
-                except FileNotFoundError:
-                    print(f"file {os.path.join(paolo_path, filepath)} non trovato")
-                except json.JSONDecodeError:
-                    print(f"errore nella decodifica del file json {os.path.join(paolo_path, filepath)}")
-            else:  # To load it back (it will load the array as a list)
-                with open(os.path.join(save_dir, "data_dict_fixed.json"), "r") as file:
-                    data_dict[i] = json.load(file)
-                    # loaded_dict['data'] = np.array(loaded_dict['data'])  # Convert back to ndarray
+                        # loaded_dict['data'] = np.array(loaded_dict['data'])  # Convert back to ndarray
 
             # print(f"Keys in data_dict[{i}]: {list(data_dict[i].keys())}")
             # Li faccio tornare nparray perchè serve cosi dopo
