@@ -60,10 +60,21 @@ st.sidebar.write("Intermediate steps viewer:")
 start_time = time.time()
 
 ## Upload images and rotate them by given angle
-img_file_buffer_ur = st.file_uploader("Upper-right (UR) fragment:", type=["tiff"])
-img_file_buffer_lr = st.file_uploader("Bottom-right (BR) fragment:", type=["tiff"])
-img_file_buffer_ll = st.file_uploader("Bottom-left (BL) fragment:", type=["tiff"])
-img_file_buffer_ul = st.file_uploader("Upper-left (UL) fragment:", type=["tiff"])
+if os.path.exists("/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/StitchPro/test-data/"):
+    img_file_buffer_ur = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/TCGA-A2-A3XU-01Z-00-DX1.174A92D4-50B2-4A59-AD31-D5EC5BBF2F65_downsampled/upper_right.tif"
+    img_file_buffer_lr = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/TCGA-A2-A3XU-01Z-00-DX1.174A92D4-50B2-4A59-AD31-D5EC5BBF2F65_downsampled/bottom_right.tif"
+    img_file_buffer_ll = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/TCGA-A2-A3XU-01Z-00-DX1.174A92D4-50B2-4A59-AD31-D5EC5BBF2F65_downsampled/bottom_left.tif"
+    img_file_buffer_ul = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/TCGA-A2-A3XU-01Z-00-DX1.174A92D4-50B2-4A59-AD31-D5EC5BBF2F65_downsampled/upper_left.tif"
+elif os.path.exists(r"C:\Users\dicia\NL2_project\datasets\test-data-corretto"):
+    img_file_buffer_ur = r"C:\Users\dicia\NL2_project\datasets\downsampled\downsampled_2\upper_right.tif"
+    img_file_buffer_lr = r"C:\Users\dicia\NL2_project\datasets\downsampled\downsampled_2\bottom_right.tif"
+    img_file_buffer_ll = r"C:\Users\dicia\NL2_project\datasets\downsampled\downsampled_2\bottom_left.tif"
+    img_file_buffer_ul = r"C:\Users\dicia\NL2_project\datasets\downsampled\downsampled_2\upper_left.tif"
+else:
+    img_file_buffer_ur = st.file_uploader("Upper-right (UR) fragment:", type=["tiff"])
+    img_file_buffer_lr = st.file_uploader("Bottom-right (BR) fragment:", type=["tiff"])
+    img_file_buffer_ll = st.file_uploader("Bottom-left (BL) fragment:", type=["tiff"])
+    img_file_buffer_ul = st.file_uploader("Upper-left (UL) fragment:", type=["tiff"])
 
 if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_file_buffer_ll is not None) & (img_file_buffer_ul is not None):
 
@@ -235,6 +246,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
     canny_edges_lr = canny(image_thresholded_filtered_closed_lr, sigma=5)
 
     if st.button("Start stitching!")==True:
+        start_stiching_time = time.time()
 
        # par is the array of the solution to be optimized
        # HO CAMBIATO DA 20 A 200 IL PAD
@@ -911,6 +923,9 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
 
         end_time = time.time()
         elapsed_time = end_time - start_time
+        work_time = end_time - start_stiching_time
+
+        print(f"Execution time: {work_time} seconds")
         st.sidebar.metric(label="Average Euclidean Distance (mm)", value=round(average_euclidean_distance_mm, 2), delta=None)
         st.sidebar.metric(label="Total execution time (s)", value=round(elapsed_time, 2), delta=None)
         #print('Total execution time of algorithm:', round(elapsed_time, 2), 'seconds')
