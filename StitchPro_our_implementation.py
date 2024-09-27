@@ -233,7 +233,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
 
     if st.button("Start stitching!")==True:
     # if True:
-
+        start_stiching_time = time.time()
         data_dict = []
         # Tissue masks are the 'closed-masks' (see the iamge saved for details)
         tissue_masks = [image_thresholded_filtered_closed_ur, image_thresholded_filtered_closed_lr,
@@ -702,6 +702,9 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
 
         end_time = time.time()
         elapsed_time = end_time - start_time
+        work_time = end_time - start_stiching_time
+
+        print(f"Execution time: {work_time} seconds")
         st.sidebar.metric(label="Average Euclidean Distance (mm)", value=round(average_euclidean_distance_mm, 2), delta=None)
         st.sidebar.metric(label="Total execution time (s)", value=round(elapsed_time, 2), delta=None)
         #print('Total execution time of algorithm:', round(elapsed_time, 2), 'seconds')
