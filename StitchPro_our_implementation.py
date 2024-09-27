@@ -65,10 +65,10 @@ start_time = time.time()
 
 
 if os.path.exists("/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/StitchPro/test-data/"):
-    img_file_buffer_ur = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/StitchPro/test-data/ur.tif"
-    img_file_buffer_lr = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/StitchPro/test-data/lr-rotated.tif"
-    img_file_buffer_ll = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/StitchPro/test-data/ll-rotated.tif"
-    img_file_buffer_ul = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/StitchPro/test-data/ul.tif"
+    img_file_buffer_ur = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/TCGA-A2-A3XU-01Z-00-DX1.174A92D4-50B2-4A59-AD31-D5EC5BBF2F65_downsampled/upper_right.tif"
+    img_file_buffer_lr = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/TCGA-A2-A3XU-01Z-00-DX1.174A92D4-50B2-4A59-AD31-D5EC5BBF2F65_downsampled/bottom_right.tif"
+    img_file_buffer_ll = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/TCGA-A2-A3XU-01Z-00-DX1.174A92D4-50B2-4A59-AD31-D5EC5BBF2F65_downsampled/bottom_left.tif"
+    img_file_buffer_ul = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/TCGA-A2-A3XU-01Z-00-DX1.174A92D4-50B2-4A59-AD31-D5EC5BBF2F65_downsampled/upper_left.tif"
 elif os.path.exists(r"C:\Users\dicia\NL2_project\datasets\test-data-corretto"):
     img_file_buffer_ur = r"C:\Users\dicia\NL2_project\datasets\downsampled\downsampled_2\upper_right.tif"
     img_file_buffer_lr = r"C:\Users\dicia\NL2_project\datasets\downsampled\downsampled_2\bottom_right.tif"
@@ -300,17 +300,17 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             # print(type(data_dict[i]["pos_points"]))
 
             # COnversion needed since you can't save a nparray in a json file
-            data_dict[i]['image'] = data_dict[i]['image'].tolist()
-            data_dict[i]['tissue_mask'] = data_dict[i]['tissue_mask'].tolist()
-            data_dict[i]['tissue_mask_closed'] = data_dict[i]['tissue_mask_closed'].tolist()
-            data_dict[i]['ant_line'] = data_dict[i]['ant_line'].tolist()
-            data_dict[i]['pos_line'] = data_dict[i]['pos_line'].tolist()
-            data_dict[i]['ant_points'] = data_dict[i]['ant_points'].tolist()
-            data_dict[i]['pos_points'] = data_dict[i]['pos_points'].tolist()
+            # data_dict[i]['image'] = data_dict[i]['image'].tolist()
+            # data_dict[i]['tissue_mask'] = data_dict[i]['tissue_mask'].tolist()
+            # data_dict[i]['tissue_mask_closed'] = data_dict[i]['tissue_mask_closed'].tolist()
+            # data_dict[i]['ant_line'] = data_dict[i]['ant_line'].tolist()
+            # data_dict[i]['pos_line'] = data_dict[i]['pos_line'].tolist()
+            # data_dict[i]['ant_points'] = data_dict[i]['ant_points'].tolist()
+            # data_dict[i]['pos_points'] = data_dict[i]['pos_points'].tolist()
 
             # Save as json
-            with open(os.path.join(save_dir, "data_dict.json"), "w") as file:
-                json.dump(data_dict[i], file)
+            # with open(os.path.join(save_dir, "data_dict.json"), "w") as file:
+            #    json.dump(data_dict[i], file)
                 #  json.dump(dict((k, data_dict[i][k]) for k in ['ant_line', 'pos_line', 'ant_points', 'pos_points']), file,separators=(',', ': '))
 
             load_fixed_dicts = True
@@ -325,20 +325,20 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
                         print(f"file {os.path.join(paolo_path, filepath)} non trovato")
                     except json.JSONDecodeError:
                         print(f"errore nella decodifica del file json {os.path.join(paolo_path, filepath)}")
-                else:  # To load it back (it will load the array as a list)
-                    with open(os.path.join(save_dir, "data_dict_fixed.json"), "r") as file:
-                        data_dict[i] = json.load(file)
+                # else:  # To load it back (it will load the array as a list)
+                #    with open(os.path.join(save_dir, "data_dict_fixed.json"), "r") as file:
+                #       data_dict[i] = json.load(file)
                         # loaded_dict['data'] = np.array(loaded_dict['data'])  # Convert back to ndarray
 
             # print(f"Keys in data_dict[{i}]: {list(data_dict[i].keys())}")
             # Li faccio tornare nparray perchè serve cosi dopo
-            data_dict[i]['image'] = np.array(data_dict[i]['image'])
-            data_dict[i]['tissue_mask'] = np.array(data_dict[i]['tissue_mask'])
-            data_dict[i]['tissue_mask_closed'] = np.array(data_dict[i]['tissue_mask_closed'])
-            data_dict[i]['ant_line'] = np.array(data_dict[i]['ant_line'])
-            data_dict[i]['pos_line'] = np.array(data_dict[i]['pos_line'])
-            data_dict[i]['ant_points'] = np.array(data_dict[i]['ant_points'])
-            data_dict[i]['pos_points'] = np.array(data_dict[i]['pos_points'])
+            # data_dict[i]['image'] = np.array(data_dict[i]['image'])
+            # data_dict[i]['tissue_mask'] = np.array(data_dict[i]['tissue_mask'])
+            # data_dict[i]['tissue_mask_closed'] = np.array(data_dict[i]['tissue_mask_closed'])
+            # data_dict[i]['ant_line'] = np.array(data_dict[i]['ant_line'])
+            # data_dict[i]['pos_line'] = np.array(data_dict[i]['pos_line'])
+            # data_dict[i]['ant_points'] = np.array(data_dict[i]['ant_points'])
+            # data_dict[i]['pos_points'] = np.array(data_dict[i]['pos_points'])
 
             # Crea una figura con 3 sottotrame
             fig, axs = plt.subplots(2, 3, figsize=(15, 5))  # 1 riga, 3 colonne

@@ -124,15 +124,17 @@ class Image_Lines():
         self.ant_points = self.extract_points_on_border(first)[2]
         self.pos_points = self.extract_points_on_border(second)[2]
         self.intersection = self.find_intersection(first, second)  # returns (x,y) coordinates of the intersection
-        # Questo non funziona, non è sempre l'ultimo elemento del vettore, alle volte è anche il primo
-        # penso il modo per farlo sia trovare il punto nei ant_point/pos_point più lontano da intersection
-        # self.end_ant_point, self.end_pos_point = (self.ant_points[-1], self.pos_points[-1])
+
+        # Inverti! end_ant_point va con pos_line e end_pos_points va con ant_line
         # Questo non è il metodo migliore per trovare la fine dei lati, ma è il più pratico
-        self.end_ant_point, self.end_pos_point = self.farthest_point(self.ant_points), self.farthest_point(self.pos_points)
+        self.end_pos_point, self.end_ant_point = self.farthest_point(self.ant_points), self.farthest_point(self.pos_points)
         # DEBUGGING
         print("end_points: ", self.end_ant_point, self.end_pos_point)
+        # self.plot_results()
 
-        self.identify_quadrant()
+        self.quadrant = self.identify_quadrant()
+        self.invert_line_and_points()
+        # self.plot_results()
 
     def hough_transform_skimage_implementation(self):
         threshold = 1
@@ -259,10 +261,10 @@ class Image_Lines():
         else:
             x = int((q2 * p3 - p2 * q3)/det)
             y = int((p1 * q3 - q1 * p3)/det)
-            print("Intersection point found: ", x, y)
+            print("Intersection point found: x = ", x, "y = ", y)
 
             # Ritorno (y,x) cosi che sia coerente con la funzione shape
-            return y, x
+            return x, y
 
     # Function to find the farthest point
     def farthest_point(self, points_array):
@@ -278,7 +280,7 @@ class Image_Lines():
         return farthest
 
     def plot_results(self):
-        fig, axes = plt.subplots(1, 3, figsize=(15, 6))
+        fig, axes = plt.subplots(2, 2, figsize=(15, 6))
         ax = axes.ravel()
 
         # 1 Immagine
@@ -331,15 +333,22 @@ class Image_Lines():
         aux_mask = cv.cvtColor(aux_mask, cv.COLOR_GRAY2RGB)
         # disegna i punti per sola visualizzazione
         for point in self.ant_points:
-            cv.drawMarker(aux_mask, tuple(point), color=(255, 255, 255), markerType=cv.MARKER_SQUARE, markerSize=3,
+            cv.drawMarker(aux_mask, tuple(point), color=(255, 255, 0), markerType=cv.MARKER_SQUARE, markerSize=3,
                           thickness=2)
 
         for point in self.pos_points:
-            cv.drawMarker(aux_mask, tuple(point), color=(155, 155, 15), markerType=cv.MARKER_SQUARE, markerSize=3,
+            cv.drawMarker(aux_mask, tuple(point), color=(255, 0, 0), markerType=cv.MARKER_SQUARE, markerSize=3,
                           thickness=2)
 
         ax[2].imshow(aux_mask)
         ax[2].set_title("Contorni")
+
+        aux_mask = self.image.copy()
+        aux_mask = cv.cvtColor(aux_mask, cv.COLOR_GRAY2RGB)
+        ax[3].imshow(aux_mask)
+        # Plot the line over the image
+        ax[3].axline(xy1=self.intersection, xy2=self.end_ant_point, color='yellow', linewidth=2,marker='o')
+        ax[3].axline(xy1=self.intersection, xy2=self.end_pos_point, color='red', linewidth=2, marker='o')
 
 
         plt.suptitle("Final result for hough_transform_skimage", fontsize=16)
@@ -359,19 +368,60 @@ class Image_Lines():
         print("self.image.shape[1]:", self.image.shape[1])
 
         # 1) capire in che zona è l'intersezione cosi da identificare la posizione del frammento
-        if self.intersection[0] >= int(self.image.shape[0] / 2) and self.intersection[1] >= int(self.image.shape[1] / 2):
+        if self.intersection[1] >= int(self.image.shape[0] / 2) and self.intersection[0] >= int(self.image.shape[1] / 2):
             print("Intersezione trovata in basso a dx - Frammento UL")
             return "UL"
-        elif self.intersection[0] <= int(self.image.shape[0] / 2) and self.intersection[1] >= int(self.image.shape[1] / 2):
+        elif self.intersection[1] <= int(self.image.shape[0] / 2) and self.intersection[0] >= int(self.image.shape[1] / 2):
             print("Intersezione trovata in alto a dx - Frammento LL")
-            return "BL"
-        elif self.intersection[0] <= int(self.image.shape[0] / 2) and self.intersection[1] <= int(self.image.shape[1] / 2):
+            return "LL"
+        elif self.intersection[1] <= int(self.image.shape[0] / 2) and self.intersection[0] <= int(self.image.shape[1] / 2):
             print("Intersezione trovata in alto a sx - Frammento LR")
-            return "BR"
+            return "LR"
         # In Basso e a Sx
-        elif self.intersection[0] >= int(self.image.shape[0] / 2) and self.intersection[1] <= int(self.image.shape[1] / 2):
+        elif self.intersection[1] >= int(self.image.shape[0] / 2) and self.intersection[0] <= int(self.image.shape[1] / 2):
             print("Intersezione troavta in basso a Sx - Frammento UR")
             return "UR"
+
+    def invert_line_and_points(self):
+        def invert():
+            tmp_points = self.ant_points
+            self.ant_points = self.pos_points
+            self.pos_points = tmp_points
+
+            tmp_end_point = self.end_ant_point
+            self.end_ant_point = self.end_pos_point
+            self.end_pos_point = tmp_end_point
+        """
+        input: self.end_ant_point: (x,y)
+        :return:
+        """
+        print("self.end_ant_point", self.end_ant_point)
+        print("self.end_pos_point", self.end_pos_point)
+        if self.quadrant == "UR":
+            if self.end_ant_point[1] < self.end_pos_point[1]:
+                print("Da non invertire")
+            else:
+                print("Da invertire")
+                invert()
+        elif self.quadrant == "LR":
+            if self.end_ant_point[1] < self.end_pos_point[1]:
+                print("Da non invertire")
+            else:
+                print("Da invertire")
+                invert()
+        elif self.quadrant == "LL":
+            if self.end_ant_point[1] > self.end_pos_point[1]:
+                print("Da non invertire")
+            else:
+                print("Da invertire")
+        elif self.quadrant == "UL":
+            if self.end_ant_point[1] > self.end_pos_point[1]:
+                print("Da non invertire")
+            else:
+                print("Da invertire")
+                invert()
+
+
 
 def main():
     from preprocessing import Preprocessing
@@ -440,7 +490,7 @@ def main():
 
     # Trasformation through hough
     image_lines = Image_Lines(prep.original_image, processed_img, save_dir)
-    image_lines.plot_results()
+    # image_lines.plot_results()
 
     return 0
 
