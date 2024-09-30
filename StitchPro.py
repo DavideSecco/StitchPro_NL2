@@ -65,10 +65,10 @@ start_time = time.time()
 
 ## Upload images and rotate them by given angle
 if os.path.exists("/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/StitchPro/test-data/"):
-    img_file_buffer_ur = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/TCGA-A2-A3XU-01Z-00-DX1.174A92D4-50B2-4A59-AD31-D5EC5BBF2F65_downsampled/upper_right.tif"
-    img_file_buffer_lr = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/TCGA-A2-A3XU-01Z-00-DX1.174A92D4-50B2-4A59-AD31-D5EC5BBF2F65_downsampled/bottom_right.tif"
-    img_file_buffer_ll = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/TCGA-A2-A3XU-01Z-00-DX1.174A92D4-50B2-4A59-AD31-D5EC5BBF2F65_downsampled/bottom_left.tif"
-    img_file_buffer_ul = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/TCGA-A2-A3XU-01Z-00-DX1.174A92D4-50B2-4A59-AD31-D5EC5BBF2F65_downsampled/upper_left.tif"
+    img_file_buffer_ur = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/Dataset_00/upper_right.tif"
+    img_file_buffer_lr = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/Dataset_00/bottom_right.tif"
+    img_file_buffer_ll = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/Dataset_00/bottom_left.tif"
+    img_file_buffer_ul = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/Dataset_00/upper_left.tif"
 elif os.path.exists(r"C:\Users\dicia\NL2_project\datasets\test-data-corretto"):
     img_file_buffer_ur = r"C:\Users\dicia\NL2_project\datasets\downsampled\downsampled_2\upper_right.tif"
     img_file_buffer_lr = r"C:\Users\dicia\NL2_project\datasets\downsampled\downsampled_2\bottom_right.tif"
@@ -333,24 +333,24 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
 
             # DEBUGGING
             # create folder
-            save_dir = os.path.join(root_folder, 'debug', files[i])
+            save_dir_image_i = os.path.join(root_folder, 'debug', files[i])
 
 
 
 
 
             try:
-                os.makedirs(save_dir, exist_ok=True)
-                print(f"Cartella '{save_dir}' creata con successo")
+                os.makedirs(save_dir_image_i, exist_ok=True)
+                print(f"Cartella '{save_dir_image_i}' creata con successo")
             except OSError as e:
                 print(f"Errore nella creazione della cartella: {e}")
 
             plt.figure(figsize=(50, 50))
             plt.imshow(x, cmap='gray')  # DEBUGGING
-            plt.savefig(os.path.join(save_dir, f'{files[i]}_tissue_mask.png'))
+            plt.savefig(os.path.join(save_dir_image_i, f'{files[i]}_tissue_mask.png'))
             plt.figure(figsize=(50, 50))
             plt.imshow(x_out, cmap='gray')
-            plt.savefig(os.path.join(save_dir, f'{files[i]}_tissue_mask_closed.png'))
+            plt.savefig(os.path.join(save_dir_image_i, f'{files[i]}_tissue_mask_closed.png'))
 
 
 
@@ -378,7 +378,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             # DEBUGGING
             plt.figure(figsize=(50, 50))
             plt.imshow(x, cmap='gray')
-            plt.savefig(os.path.join(save_dir, f'{files[i]}_debugging_x_contours.png'))
+            plt.savefig(os.path.join(save_dir_image_i, f'{files[i]}_debugging_x_contours.png'))
 
             # points variable is a nx2 array containing the 2D-coordinates of the n points in the filled-(contour)-image
             # x that hare white (i.e. satisfy the condition x>0)
@@ -446,13 +446,13 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             # this is to save the entire series of ellipse solutions generated
             debug_this = True
             if debug_this:
-                new_save_dir = os.path.join(save_dir, 'solutions_series')
+                new_save_dir_image_i = os.path.join(save_dir_image_i, 'solutions_series')
                 try:
-                    os.makedirs(new_save_dir, exist_ok=True)
-                    print(f"Cartella '{new_save_dir}' creata con successo")
+                    os.makedirs(new_save_dir_image_i, exist_ok=True)
+                    print(f"Cartella '{new_save_dir_image_i}' creata con successo")
                 except OSError as e:
                     print(f"Errore nella creazione della cartella: {e}")
-            os.chdir(new_save_dir)
+            os.chdir(new_save_dir_image_i)
             for y, sol in enumerate(solutions):
                 circle_arc_loss_cv(sol.x, x, pad, save=True, name=f'img_{y}')
 
@@ -462,7 +462,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             solution = solutions[solution_idx]
 
             # Mi muovo avanti e indietro nella cartella perché cosi salvo l'immagine nella posizione giusta
-            os.chdir(save_dir)
+            os.chdir(save_dir_image_i)
             circle_arc_loss_cv(solution.x, x, pad, save=True)
 
             # retrieving the parameters of the best solution
@@ -543,7 +543,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
                 cv2.line(xx, [int(cx), int(cy)], np.int32(point_ant[0][::-1]), [255, 128, 128], 1)
                 cv2.line(xx, [int(cx), int(cy)], np.int32(point_pos[0][::-1]), [128, 255, 128], 1)
                 plt.imshow(xx)
-                plt.savefig(os.path.join(save_dir, f'{files[i]}pos_points_and_ant_points.png'))
+                plt.savefig(os.path.join(save_dir_image_i, f'{files[i]}pos_points_and_ant_points.png'))
 
 
             # draw examples
@@ -569,7 +569,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
 
             plt.figure(figsize=(50, 50))
             plt.imshow(O)
-            plt.savefig(os.path.join(save_dir, f'{files[i]}_semi_output_example.png'))
+            plt.savefig(os.path.join(save_dir_image_i, f'{files[i]}_semi_output_example.png'))
 
             data_dict.append({
                 "image": images[i],
@@ -599,7 +599,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             data_dict[i]['pos_points'] = data_dict[i]['pos_points'].tolist()
 
             # Save as json
-            with open(os.path.join(save_dir, "data_dict_vanilla.json"), "w") as file:
+            with open(os.path.join(save_dir_image_i, "data_dict_vanilla.json"), "w") as file:
                 # json.dump(data_dict[i], file)
                 json.dump(dict((k, data_dict[i][k]) for k in ['ant_line', 'pos_line', 'ant_points', 'pos_points']),
                           file,
@@ -658,7 +658,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
 
             plt.tight_layout()
 
-            plt.savefig(os.path.join(save_dir, 'data_dict_vanilla'), dpi=300)
+            plt.savefig(os.path.join(save_dir_image_i, 'data_dict_vanilla'), dpi=300)
 
             plt.close('all')
 
@@ -970,7 +970,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
         # # new_spacing_y = original_size[1]*original_spacing[1]/new_size[1]
         new_spacing = (2 ** int(level)) * float(original_spacing)  # *(10**(-3))
         #
-        tifffile.imwrite(out_path + "output.tif", np.array(region), photometric='rgb', imagej=True,
+        tifffile.imwrite(os.path.join(save_dir, "output.tif"), np.array(region), photometric='rgb', imagej=True,
                          resolution=(1 / new_spacing, 1 / new_spacing), metadata={'spacing': new_spacing, 'unit': 'um'})
         # # imageio.imwrite(args.output_path+"output.tif", output, format="tif")
 

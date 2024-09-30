@@ -65,10 +65,10 @@ start_time = time.time()
 
 
 if os.path.exists("/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/StitchPro/test-data/"):
-    img_file_buffer_ur = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/TCGA-A2-A3XU-01Z-00-DX1.174A92D4-50B2-4A59-AD31-D5EC5BBF2F65_downsampled/upper_right.tif"
-    img_file_buffer_lr = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/TCGA-A2-A3XU-01Z-00-DX1.174A92D4-50B2-4A59-AD31-D5EC5BBF2F65_downsampled/bottom_right.tif"
-    img_file_buffer_ll = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/TCGA-A2-A3XU-01Z-00-DX1.174A92D4-50B2-4A59-AD31-D5EC5BBF2F65_downsampled/bottom_left.tif"
-    img_file_buffer_ul = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/TCGA-A2-A3XU-01Z-00-DX1.174A92D4-50B2-4A59-AD31-D5EC5BBF2F65_downsampled/upper_left.tif"
+    img_file_buffer_ur = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/Dataset_00/upper_right.tif"
+    img_file_buffer_lr = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/Dataset_00/bottom_right.tif"
+    img_file_buffer_ll = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/Dataset_00/bottom_left.tif"
+    img_file_buffer_ul = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/Dataset_00/upper_left.tif"
 elif os.path.exists(r"C:\Users\dicia\NL2_project\datasets\test-data-corretto"):
     img_file_buffer_ur = r"C:\Users\dicia\NL2_project\datasets\downsampled\downsampled_2\upper_right.tif"
     img_file_buffer_lr = r"C:\Users\dicia\NL2_project\datasets\downsampled\downsampled_2\bottom_right.tif"
@@ -250,23 +250,23 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
 
             # DEBUGGING
             # create folder
-            save_dir = os.path.join(root_folder, 'debug', files[i])
+            save_dir_image_i = os.path.join(root_folder, 'debug', files[i])
             try:
-                os.makedirs(save_dir, exist_ok=True)
-                print(f"Cartella '{save_dir}' creata con successo")
+                os.makedirs(save_dir_image_i, exist_ok=True)
+                print(f"Cartella '{save_dir_image_i}' creata con successo")
             except OSError as e:
                 print(f"Errore nella creazione della cartella: {e}")
             plt.figure()
             plt.imshow(x, cmap='gray')  # DEBUGGING
-            plt.savefig(os.path.join(save_dir, f'{files[i]}_tissue_mask.png'))
+            plt.savefig(os.path.join(save_dir_image_i, f'{files[i]}_tissue_mask.png'))
 
             plt.figure()
             plt.imshow(x_out, cmap='gray')
-            plt.savefig(os.path.join(save_dir, f'{files[i]}_tissue_mask_closed.png'))
+            plt.savefig(os.path.join(save_dir_image_i, f'{files[i]}_tissue_mask_closed.png'))
 
 ######################### INIZIO NOSTRA IMPLEMENTAZIONE ############################################
             # print("Tipi immagine: ", type(images[i][2, 3]), type(tissue_masks_closed[i][2, 3]))
-            image_lines = Image_Lines(images[i], tissue_masks_closed[i], save_dir)
+            image_lines = Image_Lines(images[i], tissue_masks_closed[i], save_dir_image_i)
             image_lines.plot_results()
             ant_line = np.array([image_lines.intersection, image_lines.end_ant_point])
             pos_line = np.array([image_lines.intersection, image_lines.end_pos_point])
@@ -309,7 +309,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             # data_dict[i]['pos_points'] = data_dict[i]['pos_points'].tolist()
 
             # Save as json
-            # with open(os.path.join(save_dir, "data_dict.json"), "w") as file:
+            # with open(os.path.join(save_dir_image_i, "data_dict.json"), "w") as file:
             #    json.dump(data_dict[i], file)
                 #  json.dump(dict((k, data_dict[i][k]) for k in ['ant_line', 'pos_line', 'ant_points', 'pos_points']), file,separators=(',', ': '))
 
@@ -326,7 +326,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
                     except json.JSONDecodeError:
                         print(f"errore nella decodifica del file json {os.path.join(paolo_path, filepath)}")
                 # else:  # To load it back (it will load the array as a list)
-                #    with open(os.path.join(save_dir, "data_dict_fixed.json"), "r") as file:
+                #    with open(os.path.join(save_dir_image_i, "data_dict_fixed.json"), "r") as file:
                 #       data_dict[i] = json.load(file)
                         # loaded_dict['data'] = np.array(loaded_dict['data'])  # Convert back to ndarray
 
@@ -380,7 +380,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
 
             plt.tight_layout()
 
-            plt.savefig(os.path.join(save_dir, 'data_dict'), dpi=300)
+            plt.savefig(os.path.join(save_dir_image_i, 'data_dict'), dpi=300)
 
             plt.close("all")
 
@@ -692,7 +692,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
         # # new_spacing_y = original_size[1]*original_spacing[1]/new_size[1]
         new_spacing = (2 ** int(level)) * float(original_spacing)  # *(10**(-3))
         #
-        tifffile.imwrite(out_path + "output_custom.tif", np.array(region), photometric='rgb', imagej=True,
+        tifffile.imwrite(os.path.join(save_dir, "output_custom.tif"), np.array(region), photometric='rgb', imagej=True,
                          resolution=(1 / new_spacing, 1 / new_spacing), metadata={'spacing': new_spacing, 'unit': 'um'})
         # # imageio.imwrite(args.output_path+"output.tif", output, format="tif")
 
