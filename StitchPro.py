@@ -36,6 +36,10 @@ import json
 
 import matplotlib.pyplot as plt # DEBUGGING
 
+# IMPORT OUR CLASSES
+from utilities import Preprocessing, Line, Image_Lines
+
+
 # Names
 files = ["upper_right", "bottom_right", "bottom_left", "upper_left"]
 root_folder = os.getcwd()
@@ -250,7 +254,8 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
 
        # par is the array of the solution to be optimized
        # HO CAMBIATO DA 20 A 200 IL PAD
-        def circle_arc_loss_cv(par, mask, pad=200, save=False):
+       # L'HO CAMBIATO DA 200 a 1000
+        def circle_arc_loss_cv(par, mask, pad=1500, save=False, name='best_ellipse_solution.png'):
             mask = cv2.copyMakeBorder(
                 mask, pad, pad, pad, pad, cv2.BORDER_CONSTANT)
             cx, cy, r1, r2, theta_1, theta_plus = par
@@ -264,9 +269,9 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
 
             # this is just for debugging purposes
             if save:
-                plt.figure(figsize=(10,10))
+                plt.figure(figsize=(50, 50))
                 plt.imshow(O, cmap='gray')
-                plt.savefig('best_ellipse_solution.png')
+                plt.savefig(name)
 
             fn = np.sum((mask == 1) & (O == 0))
             I = np.sum(O * mask)
@@ -297,8 +302,8 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
 
         from scipy.optimize import NonlinearConstraint
         from scipy import optimize
-
-        POP_SIZE = 10
+        # Inizialmente POP_SIZE era 10
+        POP_SIZE = 50
 
         data_dict = []
 
@@ -330,6 +335,10 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             # create folder
             save_dir = os.path.join(root_folder, 'debug', files[i])
 
+
+
+
+
             try:
                 os.makedirs(save_dir, exist_ok=True)
                 print(f"Cartella '{save_dir}' creata con successo")
@@ -343,15 +352,16 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             plt.imshow(x_out, cmap='gray')
             plt.savefig(os.path.join(save_dir, f'{files[i]}_tissue_mask_closed.png'))
 
+
+
+
+
             # Trova il contorno e lo restituisce sotto forma di tupla in cui ogni elemento contiene il contorno,
             # 'RETR_EXTERNAL' permette di avere il contorno più esterno (quello della figura in teoria) in c[0]
             c = cv2.findContours(x, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)[0]
-
-            # print('numero di contorni trovati: ', len(c))  # DEBUGGING
-            # print('contorno utilizzato: ', c[0].shape)
-
             x = np.zeros_like(x)
             Mx, My = x.shape
+
 
             # print('n.ro pixel immagine binaria: ', Mx, My)
 
@@ -379,41 +389,73 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             points_out = np.stack(np.where(x_out > 0), axis=1)
             # print(points_out.shape)
 
-            pad = np.maximum(int(M * 0.1), 100)
+            # initially it was int(M*0.1)
+            pad = np.maximum(int(M * 0.4), 100)
 
             # initialization has inside the coordinates of the
-            initializations = []
+            # initializations = []
 
-            for init_x in [0, Mx / 2, Mx]:
-                for init_y in [0, My / 2, My]:
-                    initializations.append((init_y, init_x))
+            # qui ho cambiato le inizializzazioni
+            # for init_x in [0, Mx]:
+            #     for init_y in [My, 0]:
+            #         initializations.append((init_y, init_x))
 
+            initializations = [
+                (0, My),
+                (0, 0),
+                (Mx, 0),
+                (Mx, My)
+            ]
 
             solutions = []
-            for init in initializations:
-                print("Trying initialization for segment {}: {}".format(i, init))
+            print("Trying initialization for segment {}: {}".format(i, initializations[i]))
 
-                # curr_theta -np.pi/8 = -9/8*pi
-                # curr_theta + extra_theta = pi
-                # segment angle is the angle of the n quadrants (e.g. if 4 quadrants, segment angle is 2*pi/4)
-                bounds = [(0, M), (0, M), (0, M), (0, M),
-                          (curr_theta - np.pi / 8, curr_theta + extra_theta),
-                          (segment_angle * 0.8, segment_angle * 1.2)]
-                x0 = [init[0], init[1], M / 2, M / 2,
-                      curr_theta, segment_angle]
+            # curr_theta -np.pi/8 = -9/8*pi
+            # curr_theta + extra_theta = pi
+            # segment angle is the angle of the n quadrants (e.g. if 4 quadrants, segment angle is 2*pi/4)
+            # Delta rappresenta quanto vuoi permettere al centro di muoversi rispetto alla posizione iniziale
+            delta = 20
+            initial_cx, initial_cy = initializations[i]
 
-                # differential_evolution optimizes a properly defined loss function (see circle_arc_loss_cv
-                # implementation
+            bounds = [
+                (max(0, initial_cx - delta), min(M, initial_cx + delta)),  # Limita cx vicino a initial_cx
+                (max(0, initial_cy - delta), min(M, initial_cy + delta)),  # Limita cy vicino a initial_cy
+                (M / 4, 3*M / 4),  # Semiasse r1 (può essere più ristretto se necessario)
+                (M / 4, 3*M / 4),  # Semiasse r2 (può essere più ristretto se necessario)
+                (curr_theta - np.pi / 8, curr_theta + extra_theta),  # Angolo iniziale
+                (segment_angle * 0.8, segment_angle * 1.2)  # Ampiezza dell'arco
+            ]
 
-                solution = optimize.differential_evolution(
-                    circle_arc_loss_cv, x0=x0, bounds=bounds,
-                    args=[x, pad], popsize=POP_SIZE, maxiter=250, workers=1)  # updating='immediate'
-                solutions.append(solution)
-                # print('\n', solution)
-                # solution.x is the array of parameter of the optimized solution
-                # circle_arc_loss_cv(solution.x, x, pad, show=False)
+            x0 = [initializations[i][0], initializations[i][1], M / 2, M / 2,
+                  curr_theta, segment_angle]
+
+            # differential_evolution optimizes a properly defined loss function (see circle_arc_loss_cv
+            # implementation
+
+            # MAXITER WAS SET TO 250 originally and workers was set to 1
+            solution = optimize.differential_evolution(
+                circle_arc_loss_cv, x0=x0, bounds=bounds,
+                args=[x, pad], popsize=POP_SIZE, maxiter=500, workers=1, seed=42)  # updating='immediate'
+            solutions.append(solution)
+            # print('\n', solution)
+            # solution.x is the array of parameter of the optimized solution
+            # circle_arc_loss_cv(solution.x, x, pad, show=False)
 
             # print([s.fun for s in solutions])
+
+            # this is to save the entire series of ellipse solutions generated
+            debug_this = True
+            if debug_this:
+                new_save_dir = os.path.join(save_dir, 'solutions_series')
+                try:
+                    os.makedirs(new_save_dir, exist_ok=True)
+                    print(f"Cartella '{new_save_dir}' creata con successo")
+                except OSError as e:
+                    print(f"Errore nella creazione della cartella: {e}")
+            os.chdir(new_save_dir)
+            for y, sol in enumerate(solutions):
+                circle_arc_loss_cv(sol.x, x, pad, save=True, name=f'img_{y}')
+
 
             # looking for the best solution
             solution_idx = np.argmin([s.fun for s in solutions])
@@ -435,6 +477,10 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             theta_1_, theta_2_ = np.rad2deg([theta_1, theta_2])
             O = images[i].copy()
 
+            ##########################
+            ####### Punti ant ########
+
+
             # retrieve points from extremal landmarks
             r_ant = radius_at_angle(theta_1, r1, r2)
 
@@ -449,12 +495,22 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             point_ant = points_out[
                 np.argmin(cdist(points_out, pca_sorted), axis=0)]
 
+            ##########################
+
+            ##########################
+            ####### Punti pos ########
+
             # same as points_cart_ant but for angle theta_2 (see saved image for explaination)
             r_pos = radius_at_angle(theta_2, r1, r2)
             points_cart_pos = np.array([pol2cart(r_pos, theta_2)]) + [cx, cy]
             pcp_sorted = np.array([points_cart_pos[0][::-1]])
             point_pos = points_out[
                 np.argmin(cdist(points_out, pcp_sorted[::-1]), axis=0)]
+
+            ##########################
+
+            ##########################
+            ####### Punti ant ######## sembra, ma nell'ultima iscruzione li chimata pos
 
             # retrieve points for histogram
             ant_axis_line_mask = np.zeros_like(x, dtype=np.uint8)
@@ -464,7 +520,8 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             pos_points = np.roll(
                 np.array(np.where(ant_axis_line_mask * x_out)).T, 1, 1)
 
-
+            ##########################
+            ####### Punti pos ######## sembra, ma nell'ultima iscruzione li chimata ant
 
             pos_axis_line_mask = np.zeros_like(x, dtype=np.uint8)
             cv2.line(pos_axis_line_mask, [int(cx), int(cy)],
@@ -477,10 +534,10 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             if debug:
                 xx = images[i].copy()
                 for pointt in pos_points:
-                    cv2.drawMarker(xx, pointt, [255, 0, 0], cv2.MARKER_CROSS, thickness=2)
+                    cv2.drawMarker(xx, pointt, [255, 0, 0], cv2.MARKER_CROSS, thickness=1)
 
                 for pointt in ant_points:
-                    cv2.drawMarker(xx, pointt, [255, 255, 0], cv2.MARKER_CROSS, thickness=2)
+                    cv2.drawMarker(xx, pointt, [255, 255, 0], cv2.MARKER_CROSS, thickness=1)
 
                 cv2.drawMarker(xx, [int(cx), int(cy)], [0, 0, 0], cv2.MARKER_STAR, thickness=4)
                 cv2.line(xx, [int(cx), int(cy)], np.int32(point_ant[0][::-1]), [255, 128, 128], 1)
