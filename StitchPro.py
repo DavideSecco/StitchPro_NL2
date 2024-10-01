@@ -13,8 +13,6 @@ if hasattr(os, 'add_dll_directory'):
 else:
     import openslide
 
-
-
 import streamlit as st
 import imageio.v2 as imageio
 import matplotlib.pyplot as plt
@@ -43,6 +41,7 @@ from utilities import Preprocessing, Line, Image_Lines
 # Names
 files = ["upper_right", "bottom_right", "bottom_left", "upper_left"]
 root_folder = os.getcwd()
+print(f"root_folder: {root_folder}")
 
 # DEBUGGING
 # create folder
@@ -250,6 +249,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
     canny_edges_lr = canny(image_thresholded_filtered_closed_lr, sigma=5)
 
     if st.button("Start stitching!")==True:
+    # if True:
         start_stiching_time = time.time()
 
        # par is the array of the solution to be optimized
@@ -581,18 +581,18 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
                 "ant_points": ant_points,
                 "pos_points": pos_points})
 
-            print("Riassunto dati trovati trovati per quadrante:", data_dict[i]["quadrant"])
-            print("image shape:", data_dict[i]["image"].shape)
-            print("tissue_mask:", data_dict[i]["tissue_mask"].shape)
-            print("tissue_mask_closed:", data_dict[i]["tissue_mask_closed"].shape)
-            print("ant_line:", data_dict[i]["ant_line"])
-            print("pos_line", data_dict[i]["pos_line"])
+            # print("Riassunto dati trovati trovati per quadrante:", data_dict[i]["quadrant"])
+            # print("image shape:", data_dict[i]["image"].shape)
+            # print("tissue_mask:", data_dict[i]["tissue_mask"].shape)
+            # print("tissue_mask_closed:", data_dict[i]["tissue_mask_closed"].shape)
+            # print("ant_line:", data_dict[i]["ant_line"])
+            # print("pos_line", data_dict[i]["pos_line"])
             # print("data_dict: ", data_dict)
 
             # COnversion needed since you can't save a nparray in a json file
-            # data_dict[i]['image'] = data_dict[i]['image'].tolist()
-            # data_dict[i]['tissue_mask'] = data_dict[i]['tissue_mask'].tolist()
-            # data_dict[i]['tissue_mask_closed'] = data_dict[i]['tissue_mask_closed'].tolist()
+            data_dict[i]['image'] = data_dict[i]['image'].tolist()
+            data_dict[i]['tissue_mask'] = data_dict[i]['tissue_mask'].tolist()
+            data_dict[i]['tissue_mask_closed'] = data_dict[i]['tissue_mask_closed'].tolist()
             data_dict[i]['ant_line'] = data_dict[i]['ant_line'].tolist()
             data_dict[i]['pos_line'] = data_dict[i]['pos_line'].tolist()
             data_dict[i]['ant_points'] = data_dict[i]['ant_points'].tolist()
@@ -638,12 +638,10 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             aux_mask = cv2.cvtColor(aux_mask, cv2.COLOR_GRAY2RGB)
             # disegna i punti per sola visualizzazione
             for point in data_dict[i]['ant_points']:
-                cv2.drawMarker(aux_mask, tuple(point), color=(255, 255, 0), markerType=cv2.MARKER_SQUARE,
-                               markerSize=3, thickness=2)
+                cv2.drawMarker(aux_mask, tuple(point), color=(255, 255, 0), markerType=cv2.MARKER_SQUARE, markerSize=3, thickness=2)
 
             for point in data_dict[i]['pos_points']:
-                cv2.drawMarker(aux_mask, tuple(point), color=(255, 0, 0), markerType=cv2.MARKER_SQUARE, markerSize=3,
-                               thickness=2)
+                cv2.drawMarker(aux_mask, tuple(point), color=(255, 0, 0), markerType=cv2.MARKER_SQUARE, markerSize=3, thickness=2)
 
             ax[3].imshow(aux_mask)
             ax[3].set_title("Contorni")
@@ -661,8 +659,6 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             plt.savefig(os.path.join(save_dir_image_i, 'data_dict_vanilla'), dpi=300)
 
             plt.close('all')
-
-        print(cx, cy)
 
         ## Calculate histograms and distances between histograms
 
