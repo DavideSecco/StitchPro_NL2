@@ -660,6 +660,9 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
 
             plt.close('all')
 
+        ###################################################
+        ################ Seconda parte ####################
+        ###################################################
         ## Calculate histograms and distances between histograms
 
         # set up functions to calculate colour histograms
@@ -668,6 +671,33 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
 
         # from here on it starts working on the real image
         def calculate_histogram(image, mask, center, n_bins, size):
+            """
+            Calcola gli istogrammi dei canali rosso, verde e blu (RGB) per una regione specifica di un'immagine,
+            delimitata da una maschera binaria. La regione è centrata attorno a una posizione specifica e viene ritagliata
+            utilizzando una finestra quadrata di dimensione data.
+
+            Args:
+                image (np.ndarray): Immagine di input di forma (H, W, 3), dove H è l'altezza, W è la larghezza e 3 sono
+                                    i canali di colore (rosso, verde, blu).
+                mask (np.ndarray): Maschera binaria (di forma H x W) che indica quali pixel della regione sono validi per
+                                   il calcolo dell'istogramma. Deve avere la stessa altezza e larghezza dell'immagine.
+                center (tuple): Coordinata (x, y) che rappresenta il centro della regione di interesse.
+                n_bins (int): Numero di bin per gli istogrammi di ogni canale di colore.
+                size (int): Dimensione della finestra quadrata (in pixel) attorno al centro della regione di interesse.
+
+            Returns:
+                np.ndarray: Array concatenato contenente gli istogrammi normalizzati per i canali rosso, verde e blu (RGB).
+                            La lunghezza dell'array sarà 3 * n_bins, dato che ogni canale avrà `n_bins` valori.
+
+            Steps:
+                1. Calcola i limiti della finestra centrata attorno a `center` e di dimensione `size`, garantendo che la
+                   finestra non esca fuori dai confini dell'immagine.
+                2. Estrai la regione di interesse (ROI) sia dall'immagine che dalla maschera, basandoti sui limiti calcolati.
+                3. Applica la maschera binaria alla ROI dell'immagine per ottenere solo i pixel validi.
+                4. Per ogni canale (rosso, verde, blu), calcola l'istogramma normalizzato su `n_bins`, considerando i pixel validi.
+                5. Restituisci un array contenente gli istogrammi concatenati dei tre canali.
+            """
+
             # function that computes the histograms for red green and blue channel of a certain region of the given
             # image. The region position is given by the mask
             x, y = center
@@ -678,17 +708,18 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             sub_image = image[x1:x2, y1:y2]
             sub_image = sub_image.reshape([-1, 3])[mask.reshape([-1]) == 1]
 
-            # DEBUGGING
-            # plt.imshow(sub_image)
-            # plt.savefig('sub_image')
-            # plt.imshow(mask)
-            # plt.savefig('sub_mask')
+            # DEBUGGING: immagini molto brutte
+            plt.imshow(sub_image)
+            plt.savefig(os.path.join(save_dir, 'sub_image'))
+            plt.imshow(mask)
+            plt.savefig(os.path.join(save_dir,'sub_mask'))
 
             r_hist = np.histogram(sub_image[:, 0], n_bins, range=[0, 256], density=True)[0]
             g_hist = np.histogram(sub_image[:, 1], n_bins, range=[0, 256], density=True)[0]
             b_hist = np.histogram(sub_image[:, 2], n_bins, range=[0, 256], density=True)[0]
 
             out = np.concatenate([r_hist, g_hist, b_hist])
+
             return out
 
 
@@ -717,8 +748,11 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
         print("Calculating correlation distances between histograms for every tissue section pair...")
         histogram_dists = {}
         for i, j in combinations(range(len(data_dict) + 1), 2):
+            # combinations returns: (0,1),(0,2),(0,3),(1,2),(1,3),(2,3)
+            # MA PERCHÈ TUTTE TUTTE LE COMBINAZIONI? QUELLE OPPOSTE NON DOVREBBERO ESSERCI
             i = i % len(data_dict)
             j = j % len(data_dict)
+            # cdist = calcola le distanze tra due insiemi di vettori (istogrammi), restituendo una matrice di distanze
             histogram_dists[i, j] = {
                 "ant_pos": cdist(
                     data_dict[i]['histograms_ant'], data_dict[j]['histograms_pos'],
@@ -727,7 +761,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
                     data_dict[i]['histograms_pos'], data_dict[j]['histograms_ant'],
                     metric="correlation")}
 
-        # ensuring that max distance == 1
+        # ensuring that max distance == 1 (normalizzo)
         for i, j in histogram_dists:
             histogram_dists[i, j]['ant_pos'] = np.divide(
                 histogram_dists[i, j]['ant_pos'], histogram_dists[i, j]['ant_pos'].max())
@@ -752,6 +786,13 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
 
 
         def par_to_H(theta, tx, ty):
+            '''
+            Convert a set of three parameters to a homography matrix.
+
+            This function takes an angle of rotation and translations in the x
+            and y directions and returns a 3x3 affine transformation matrix
+            that can be used for geometric transformations in 2D space.
+            '''
             # converts a set of three parameters to
             # a homography matrix
             H = AffineTransform(
@@ -760,6 +801,41 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
 
 
         def M_to_quadrant_dict(M, quadrants, anchor):
+            """
+                Generate transformation matrices for each quadrant, excluding the anchor.
+
+                This function takes a set of transformation parameters, a list of quadrants,
+                and an anchor quadrant, and returns a dictionary where each key is a
+                quadrant and each value is the corresponding transformation matrix.
+
+                Parameters:
+                -----------
+                M : list or numpy.ndarray
+                    A flat list or array of transformation parameters. Each set of
+                    three consecutive values in `M` corresponds to a rotation angle and
+                    translations (tx, ty) for each quadrant.
+
+                quadrants : list of str
+                    A list of quadrant names. Each name should uniquely identify a
+                    quadrant in the context of the transformation.
+
+                anchor : str
+                    The name of the anchor quadrant that should be excluded from the
+                    output dictionary.
+
+                Returns:
+                --------
+                dict
+                    A dictionary where the keys are quadrant names (excluding the anchor)
+                    and the values are the corresponding 3x3 affine transformation matrices.
+
+                Notes:
+                -------
+                The transformation parameters in `M` are expected to be structured as
+                groups of three: [rotation, translation_x, translation_y] for each
+                quadrant. The resulting matrices can be used to apply transformations
+                to points or images in the respective quadrants.
+            """
             # function that generates the transformation matrices for each quadrant and returns a dict
             H_dict = {}
             Q = [q for q in quadrants if q != anchor]
@@ -774,9 +850,17 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
                 np.float32(coords[:, np.newaxis, :]), H)[:, 0, :]
             return out
 
+        """
+        Insieme delle Funzioni
+
+        Insieme, queste funzioni consentono di:
+
+        1. Definire trasformazioni (rotazioni e traslazioni) per diverse regioni (quadranti) di un'immagine o di uno spazio 2D.
+        Generare le matrici di trasformazione per ciascun quadrante, escludendo un quadrante di riferimento.
+        Applicare le trasformazioni alle coordinate di punti, consentendo di manipolare immagini o forme in base alle trasformazioni definite.
+        """
 
         print("Optimizing tissue mosaic...")
-
 
         def loss_fn(M, quadrants, anchor, data_dict, histogram_dists, max_size, alpha=0.1, d=32):
             # M is a list of parameters for homography matrices (every three parameters is
@@ -814,7 +898,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
                     axis2 = warp(axis2, H_dict[q2])
                     points2 = warp(points2, H_dict[q2])
 
-                # term of the final loss function related to the misalignment
+                # term of the final loss function related to the misalignment (MISALIGNMENT LOSS)
                 mis_loss += np.mean((axis1 / max_size - axis2 / max_size) ** 2)
 
                 # samples some indices (1/4 of the total number of points) on the two fragment edges
@@ -826,7 +910,10 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
                 ss2 = np.random.choice(len(points2),
                                        size=len(points2) // 4,
                                        replace=False)
+
+                # Calcolo della distanza dei punti:
                 point_distance = cdist(points1[ss1], points2[ss2])
+
                 nx, ny = np.where(point_distance < d)
                 nx, ny = ss1[nx], ss2[ny]
                 hnb = hist_dist[nx, ny]

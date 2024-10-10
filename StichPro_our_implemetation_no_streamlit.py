@@ -6,6 +6,7 @@
 OPENSLIDE_PATH = r'C:\Program Files\openslide-bin-4.0.0.3-windows-x64\bin'
 
 import os
+
 if hasattr(os, 'add_dll_directory'):
     # Windows
     with os.add_dll_directory(OPENSLIDE_PATH):
@@ -13,7 +14,6 @@ if hasattr(os, 'add_dll_directory'):
 else:
     import openslide
 
-import streamlit as st
 import imageio.v2 as imageio
 import matplotlib.pyplot as plt
 import cv2
@@ -32,15 +32,14 @@ from tiatoolbox.wsicore import WSIReader
 import time
 import json
 
-import matplotlib.pyplot as plt # DEBUGGING
+import matplotlib.pyplot as plt  # DEBUGGING
 from memory_profiler import profile
 import gc
-gc.collect()
 
+gc.collect()
 
 # IMPORT OUR CLASSES
 from utilities import Preprocessing, Line, Image_Lines
-
 
 # Names
 files = ["upper_right", "bottom_right", "bottom_left", "upper_left"]
@@ -58,12 +57,6 @@ except OSError as e:
     print(f"Errore nella creazione della cartella: {e}")
 
 ## App description
-st.title("StitchPro")
-
-st.subheader("This app was created for reconstruction of tissue quadrants into \
-        a complete pseudo-whole-mount histopathology prostate section.")
-st.write("Please upload your images below:")
-st.sidebar.write("Intermediate steps viewer:")
 start_time = time.time()
 
 ## Upload images and rotate them by given angle
@@ -77,23 +70,20 @@ elif os.path.exists(r"C:\Users\dicia\NL2_project\datasets\test-data-corretto"):
     img_file_buffer_lr = r"C:\Users\dicia\NL2_project\datasets\downsampled\downsampled_2\bottom_right.tif"
     img_file_buffer_ll = r"C:\Users\dicia\NL2_project\datasets\downsampled\downsampled_2\bottom_left.tif"
     img_file_buffer_ul = r"C:\Users\dicia\NL2_project\datasets\downsampled\downsampled_2\upper_left.tif"
-else:
-    img_file_buffer_ur = st.file_uploader("Upper-right (UR) fragment:", type=["tiff"])
-    img_file_buffer_lr = st.file_uploader("Bottom-right (BR) fragment:", type=["tiff"])
-    img_file_buffer_ll = st.file_uploader("Bottom-left (BL) fragment:", type=["tiff"])
-    img_file_buffer_ul = st.file_uploader("Upper-left (UL) fragment:", type=["tiff"])
 
-if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_file_buffer_ll is not None) & (img_file_buffer_ul is not None):
+
+if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_file_buffer_ll is not None) & (
+        img_file_buffer_ul is not None):
 
     # Read the images with name histo_fragment_[pos]
     histo_fragment_ur = imageio.imread(img_file_buffer_ur)
-    st.sidebar.image(histo_fragment_ur, caption="UR fragment", use_column_width=True)
+
     histo_fragment_lr = imageio.imread(img_file_buffer_lr)
-    st.sidebar.image(histo_fragment_lr, caption="BR fragment", use_column_width=True)
+
     histo_fragment_ll = imageio.imread(img_file_buffer_ll)
-    st.sidebar.image(histo_fragment_ll, caption="BL fragment", use_column_width=True)
+
     histo_fragment_ul = imageio.imread(img_file_buffer_ul)
-    st.sidebar.image(histo_fragment_ul, caption="UL fragment", use_column_width=True)
+
 
     # print("Dimensioni originali immagini")
     # print(histo_fragment_ur.shape)
@@ -103,7 +93,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
 
     # Rotate images if user use the option
     angle_options = [-90, 0, 90, 180]
-    angle_choice_ur = st.selectbox("Angle to rotate the UR fragment", angle_options, index = 1)
+    angle_choice_ur = 0
     if int(angle_choice_ur) == 90:
         histo_fragment_ur = cv2.rotate(histo_fragment_ur, cv2.ROTATE_90_CLOCKWISE)
     if int(angle_choice_ur) == -90:
@@ -112,7 +102,8 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
         histo_fragment_ur = cv2.rotate(histo_fragment_ur, cv2.ROTATE_180)
     if int(angle_choice_ur) == 0:
         histo_fragment_ur = histo_fragment_ur
-    angle_choice_lr = st.selectbox("Angle to rotate the BR fragment", angle_options, index = 1)
+
+    angle_choice_lr = 0
     if int(angle_choice_lr) == 90:
         histo_fragment_lr = cv2.rotate(histo_fragment_lr, cv2.ROTATE_90_CLOCKWISE)
     if int(angle_choice_lr) == -90:
@@ -121,7 +112,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
         histo_fragment_lr = cv2.rotate(histo_fragment_lr, cv2.ROTATE_180)
     if int(angle_choice_lr) == 0:
         histo_fragment_lr = histo_fragment_lr
-    angle_choice_ll = st.selectbox("Angle to rotate the BL fragment", angle_options, index = 1)
+    angle_choice_ll = 0
     if int(angle_choice_ll) == 90:
         histo_fragment_ll = cv2.rotate(histo_fragment_ll, cv2.ROTATE_90_CLOCKWISE)
     if int(angle_choice_ll) == -90:
@@ -130,7 +121,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
         histo_fragment_ll = cv2.rotate(histo_fragment_ll, cv2.ROTATE_180)
     if int(angle_choice_ll) == 0:
         histo_fragment_ll = histo_fragment_ll
-    angle_choice_ul = st.selectbox("Angle to rotate the UL fragment", angle_options, index = 1)
+    angle_choice_ul = 0
     if int(angle_choice_ul) == 90:
         histo_fragment_ul = cv2.rotate(histo_fragment_ul, cv2.ROTATE_90_CLOCKWISE)
     if int(angle_choice_ul) == -90:
@@ -142,11 +133,10 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
 
     images_original = [histo_fragment_ur, histo_fragment_lr, histo_fragment_ll, histo_fragment_ul]
 
-    original_spacing = st.slider("Original image spacing (micrometers):", 0.0, 1.0, 0.25)
-    level = st.slider("Downsampling level:", 0, 10, 5)
-    out_path = st.text_input("Insert file path (e.g. /Users/username/Documents/folder/):", "")
-    sub_bound_x = st.slider("Value to subtract from x boundary of output image:", 0, 1000, 550)
-    sub_bound_y = st.slider("Value to subtract from y boundary of output image:", 0, 1000, 550)
+    original_spacing = 0.25
+    level = 5
+    sub_bound_x = 550
+    sub_bound_y = 550
 
     # Downsample the images
     # ATTENZIONE il livello di downsampling prima era settato a 4
@@ -174,7 +164,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
     histo_fragment_gray_binary_ll = color.rgb2gray(histo_fragment_ll)
     histo_fragment_gray_ll = (histo_fragment_gray_binary_ll * 255).astype('uint8')
     histo_fragment_gray_binary_lr = color.rgb2gray(histo_fragment_lr)
-    histo_fragment_gray_lr = (histo_fragment_gray_binary_lr     * 255).astype('uint8')
+    histo_fragment_gray_lr = (histo_fragment_gray_binary_lr * 255).astype('uint8')
     histo_fragment_gray_binary_ul = color.rgb2gray(histo_fragment_ul)
     histo_fragment_gray_ul = (histo_fragment_gray_binary_ul * 255).astype('uint8')
     histo_fragment_gray_binary_ur = color.rgb2gray(histo_fragment_ur)
@@ -219,20 +209,20 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
     plt.savefig(os.path.join(save_dir, f'lower_left_segmentation.png'))
 
     ## Apply median filter to reduce the noise
-    median_filter_ur_x = st.slider('Median filter size for UR', 5, 50, 20)
-    median_filter_lr_x = st.slider('Median filter size for BR', 5, 50, 35)
-    median_filter_ll_x = st.slider('Median filter size for BL', 5, 50, 20)
-    median_filter_ul_x = st.slider('Median filter size for UL', 5, 50, 20)
+    median_filter_ur_x = 20
+    median_filter_lr_x = 35
+    median_filter_ll_x = 20
+    median_filter_ul_x = 20
     image_thresholded_filtered_ul = ndi.median_filter(image_thresholded_ul, size=int(median_filter_ul_x))
     image_thresholded_filtered_ur = ndi.median_filter(image_thresholded_ur, size=int(median_filter_ur_x))
     image_thresholded_filtered_ll = ndi.median_filter(image_thresholded_ll, size=int(median_filter_ll_x))
     image_thresholded_filtered_lr = ndi.median_filter(image_thresholded_lr, size=int(median_filter_lr_x))
 
     ## Erode the image to eliminate holes
-    closing_ur_x = st.slider('Binary closing footprint for UR', 5, 50, 15)
-    closing_lr_x = st.slider('Binary closing footprint for BR', 5, 50, 35)
-    closing_ll_x = st.slider('Binary closing footprint for BL', 5, 50, 15)
-    closing_ul_x = st.slider('Binary closing footprint for UL', 5, 50, 15)
+    closing_ur_x = 15
+    closing_lr_x = 35
+    closing_ll_x = 15
+    closing_ul_x = 15
     image_thresholded_filtered_closed_ul = morphology.binary_closing(image_thresholded_filtered_ul,
                                                                      footprint=morphology.square(
                                                                          int(closing_ul_x)))  # morphology.square(30) 28 disk
@@ -252,8 +242,8 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
     canny_edges_ll = canny(image_thresholded_filtered_closed_ll, sigma=5)
     canny_edges_lr = canny(image_thresholded_filtered_closed_lr, sigma=5)
 
-    if st.button("Start stitching!")==True:
-    # if True:
+    # if st.button("Start stitching!") == True:
+    if True:
         start_stiching_time = time.time()
 
         data_dict = []
@@ -290,7 +280,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             plt.imshow(x_out, cmap='gray')
             plt.savefig(os.path.join(save_dir_image_i, f'{files[i]}_tissue_mask_closed.png'))
 
-######################### INIZIO NOSTRA IMPLEMENTAZIONE ############################################
+            ######################### INIZIO NOSTRA IMPLEMENTAZIONE ############################################
 
             # print("Tipi immagine: ", type(images[i][2, 3]), type(tissue_masks_closed[i][2, 3]))
             image_lines = Image_Lines(images[i], tissue_masks_closed[i], save_dir_image_i)
@@ -338,10 +328,11 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             # Save as json
             with open(os.path.join(save_dir_image_i, "data_dict.json"), "w") as file:
                 # json.dump(data_dict[i], file)
-                json.dump(dict((k, data_dict[i][k]) for k in ['ant_line', 'pos_line', 'ant_points', 'pos_points']), file,separators=(',', ': '))
+                json.dump(dict((k, data_dict[i][k]) for k in ['ant_line', 'pos_line', 'ant_points', 'pos_points']),
+                          file, separators=(',', ': '))
 
             load_fixed_dicts = True
-            if load_fixed_dicts: # modo diverso di caricare su i json files fixati
+            if load_fixed_dicts:  # modo diverso di caricare su i json files fixati
                 paolo_path = r"C:\Users\dicia\NL2_project\debugging_series\restults_comparison\fixed_dicts\ciao"
                 if os.path.exists(paolo_path) and os.path.isdir(paolo_path):
                     filepath = f"data_dict_fixed_{i}.json"
@@ -355,7 +346,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
                 # else:  # To load it back (it will load the array as a list)
                 #    with open(os.path.join(save_dir_image_i, "data_dict_fixed.json"), "r") as file:
                 #       data_dict[i] = json.load(file)
-                        # loaded_dict['data'] = np.array(loaded_dict['data'])  # Convert back to ndarray
+                # loaded_dict['data'] = np.array(loaded_dict['data'])  # Convert back to ndarray
 
             # print(f"Keys in data_dict[{i}]: {list(data_dict[i].keys())}")
             # Li faccio tornare nparray perchè serve cosi dopo
@@ -391,10 +382,12 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             aux_mask = cv2.cvtColor(aux_mask, cv2.COLOR_GRAY2RGB)
             # disegna i punti per sola visualizzazione
             for point in data_dict[i]['ant_points']:
-                cv2.drawMarker(aux_mask, tuple(point), color=(255, 255, 0), markerType=cv2.MARKER_SQUARE, markerSize=3, thickness=2)
+                cv2.drawMarker(aux_mask, tuple(point), color=(255, 255, 0), markerType=cv2.MARKER_SQUARE, markerSize=3,
+                               thickness=2)
 
             for point in data_dict[i]['pos_points']:
-                cv2.drawMarker(aux_mask, tuple(point), color=(255, 0, 0), markerType=cv2.MARKER_SQUARE, markerSize=3, thickness=2)
+                cv2.drawMarker(aux_mask, tuple(point), color=(255, 0, 0), markerType=cv2.MARKER_SQUARE, markerSize=3,
+                               thickness=2)
 
             ax[3].imshow(aux_mask)
             ax[3].set_title("Contorni")
@@ -402,8 +395,10 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             aux_mask2 = data_dict[i]["tissue_mask_closed"]
             ax[4].imshow(aux_mask2)
             # Plot the line over the image
-            ax[4].axline(data_dict[i]["ant_line"][0], xy2=data_dict[i]["ant_line"][1], color='yellow', linewidth=2, marker='o')
-            ax[4].axline(data_dict[i]["pos_line"][0], xy2=data_dict[i]["pos_line"][1], color='red', linewidth=2, marker='o')
+            ax[4].axline(data_dict[i]["ant_line"][0], xy2=data_dict[i]["ant_line"][1], color='yellow', linewidth=2,
+                         marker='o')
+            ax[4].axline(data_dict[i]["pos_line"][0], xy2=data_dict[i]["pos_line"][1], color='red', linewidth=2,
+                         marker='o')
 
             plt.tight_layout()
 
@@ -411,7 +406,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
 
             plt.close("all")
 
-############### FINE NOSTRA IMPLEMENTAZIONE #################################
+        ############### FINE NOSTRA IMPLEMENTAZIONE #################################
 
         gc.collect()
 
@@ -420,8 +415,9 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
         square_size = 64
         n_bins = 32
 
+
         # from here on it starts working on the real image
-        
+
         def calculate_histogram(image, mask, center, n_bins, size):
             # function that computes the histograms for red green and blue channel of a certain region of the given
             # image. The region position is given by the mask
@@ -505,7 +501,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
         output_size = [output_size, output_size]
         print('output_size', output_size)
 
-        
+
         def par_to_H(theta, tx, ty):
             # converts a set of three parameters to
             # a homography matrix
@@ -513,7 +509,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
                 scale=1, rotation=theta, shear=None, translation=[tx, ty])
             return H.params
 
-        
+
         def M_to_quadrant_dict(M, quadrants, anchor):
             # function that generates the transformation matrices for each quadrant and returns a dict
             H_dict = {}
@@ -522,7 +518,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
                 H_dict[q] = par_to_H(*[M[i] for i in range(i * 3, i * 3 + 3)])
             return H_dict
 
-        
+
         def warp(coords, H):
             # function that does the transformation
             out = cv2.perspectiveTransform(
@@ -596,6 +592,9 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
                 no_nearby_y = point_distance.shape[1] - np.unique(ny).size
                 no_nearby_y = no_nearby_y / point_distance.shape[1]
                 hist_loss += h + (no_nearby_x + no_nearby_y) * max_dist
+
+            print("mis_loss: ", mis_loss)
+            print("hist_loss: ", hist_loss)
             loss = (mis_loss) * alpha + (1 - alpha) * hist_loss
             return loss
 
@@ -615,7 +614,6 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
 
                 x0.extend([0, a, b])
 
-        gc.collect()
 
         de_result = optimize.differential_evolution(
             loss_fn, bounds, popsize=POPSIZE, maxiter=MAXITER, disp=True, x0=x0,
@@ -624,7 +622,8 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
 
         print(de_result)
 
-        output_size = max([max(x.shape) for x in images_original]) * 2
+        # output_size = max([max(x.shape) for x in images_original]) * 2
+        output_size = max([max(x.shape) for x in images_original])
         output_size = [output_size, output_size]
         output = np.zeros((*output_size, 3), dtype=np.int32)
         output_d = np.zeros((*output_size, 3), dtype=np.int32)
@@ -636,8 +635,6 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
         axis_2_final = []
         H_dict = M_to_quadrant_dict(
             de_result.x, quadrant_list, anchor)
-
-        gc.collect()
 
         for i, data in enumerate(data_dict):
             image = images_original[i][:, :, :3]
@@ -678,10 +675,6 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
                 del axis_1_anchor  # Libera memoria
                 del axis_2_anchor  # Libera memoria
 
-
-
-            time.sleep(5)
-
             # this piece of code combines the final fragment images while taking into account the overlap of the
             # valid pixel (pixels that are not just background)
             if q in quadrant_list:
@@ -689,9 +682,9 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
                 output_d[im[:, :, :] > 0] += 1
 
             # DEBUGGING
-            # plt.figure()
-            # plt.imshow(output)
-            # plt.savefig(os.path.join(root_folder, 'debug', 'pre_output_custom.png'))
+            plt.figure()
+            plt.imshow(output)
+            plt.savefig(os.path.join(root_folder, 'debug', 'pre_output_custom.png'))
 
         print("Ho finito il ciclo")
 
@@ -713,26 +706,25 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             (axis_2_final[0][1][0] - axis_1_final[3][1][0]) ** 2 + (axis_2_final[0][1][1] - axis_1_final[3][1][1]) ** 2)
 
         average_euclidean_distance_units = (
-                                                       euclidean_distance_0_1_center + euclidean_distance_0_1_out + euclidean_distance_1_2_center
-                                                       + euclidean_distance_1_2_out + euclidean_distance_2_3_center + euclidean_distance_2_3_out
-                                                       + euclidean_distance_3_0_center + euclidean_distance_3_0_out) / 8
+                                                   euclidean_distance_0_1_center + euclidean_distance_0_1_out + euclidean_distance_1_2_center
+                                                   + euclidean_distance_1_2_out + euclidean_distance_2_3_center + euclidean_distance_2_3_out
+                                                   + euclidean_distance_3_0_center + euclidean_distance_3_0_out) / 8
 
         output[output == 0] = 255
         output = np.where(output_d > 1, output / output_d, output)
         # output[np.sum(output, axis = -1) > 650] = 0
         output = output.astype(np.uint8)
 
-        st.sidebar.image(output, caption="Stitching output", use_column_width=True)
-        #imageio.imwrite("/Users/anacastroverde/Desktop/output_black.tif", output, format="tif")
+        # imageio.imwrite("/Users/anacastroverde/Desktop/output_black.tif", output, format="tif")
 
         reader = WSIReader.open(output)
         info_dict = reader.info.as_dict()
         bounds = [0, 0, info_dict['level_dimensions'][0][0] - int(sub_bound_x),
                   info_dict['level_dimensions'][0][1] - int(
-                       sub_bound_y)]  # y-550 #To remove the excessive white space around the output image
+                      sub_bound_y)]  # y-550 #To remove the excessive white space around the output image
         region = reader.read_bounds(bounds, resolution=0, units="level", coord_space="resolution")
         #
-        #original_spacing = (float(args.original_spacing), float(args.original_spacing))
+        # original_spacing = (float(args.original_spacing), float(args.original_spacing))
         # # new_spacing_x = original_size[0]*original_spacing[0]/new_size[0]
         # # new_spacing_y = original_size[1]*original_spacing[1]/new_size[1]
         new_spacing = (2 ** int(level)) * float(original_spacing)  # *(10**(-3))
@@ -742,15 +734,15 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
         # # imageio.imwrite(args.output_path+"output.tif", output, format="tif")
 
         average_euclidean_distance_mm = average_euclidean_distance_units * new_spacing * (10 ** (-3))
-        #print('Average Euclidean Distance between corner points:', round(average_euclidean_distance_mm, 2),
-              #'millimeters')
+        # print('Average Euclidean Distance between corner points:', round(average_euclidean_distance_mm, 2),
+        # 'millimeters')
 
         end_time = time.time()
         elapsed_time = end_time - start_time
         work_time = end_time - start_stiching_time
 
+        print("Oh qui ho modificato la loss!")
+
         print(f"Execution time: {work_time} seconds")
-        st.sidebar.metric(label="Average Euclidean Distance (mm)", value=round(average_euclidean_distance_mm, 2), delta=None)
-        st.sidebar.metric(label="Total execution time (s)", value=round(elapsed_time, 2), delta=None)
-        #print('Total execution time of algorithm:', round(elapsed_time, 2), 'seconds')
+        # print('Total execution time of algorithm:', round(elapsed_time, 2), 'seconds')
 
