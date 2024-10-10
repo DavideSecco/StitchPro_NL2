@@ -69,10 +69,10 @@ if os.path.exists("/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/Multudis
     img_file_buffer_ll = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/Dataset_00/bottom_left.tif"
     img_file_buffer_ul = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/Dataset_00/upper_left.tif"
 elif os.path.exists(r"C:\Users\dicia\NL2_project\datasets\test-data-corretto"):
-    img_file_buffer_ur = r"C:\Users\dicia\NL2_project\datasets\downsampled\downsampled_2\upper_right.tif"
-    img_file_buffer_lr = r"C:\Users\dicia\NL2_project\datasets\downsampled\downsampled_2\bottom_right.tif"
-    img_file_buffer_ll = r"C:\Users\dicia\NL2_project\datasets\downsampled\downsampled_2\bottom_left.tif"
-    img_file_buffer_ul = r"C:\Users\dicia\NL2_project\datasets\downsampled\downsampled_2\upper_left.tif"
+    img_file_buffer_ur = r"C:\Users\dicia\NL2_project\datasets\test-data-corretto\ur.tif"
+    img_file_buffer_lr = r"C:\Users\dicia\NL2_project\datasets\test-data-corretto\lr-rotated.tif"
+    img_file_buffer_ll = r"C:\Users\dicia\NL2_project\datasets\test-data-corretto\ll-rotated.tif"
+    img_file_buffer_ul = r"C:\Users\dicia\NL2_project\datasets\test-data-corretto\ul.tif"
 else:
     img_file_buffer_ur = st.file_uploader("Upper-right (UR) fragment:", type=["tiff"])
     img_file_buffer_lr = st.file_uploader("Bottom-right (BR) fragment:", type=["tiff"])
@@ -255,7 +255,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
        # par is the array of the solution to be optimized
        # HO CAMBIATO DA 20 A 200 IL PAD
        # L'HO CAMBIATO DA 200 a 1000
-        def circle_arc_loss_cv(par, mask, pad=1500, save=False, name='best_ellipse_solution.png'):
+        def circle_arc_loss_cv(par, mask, pad=20, save=False, name='best_ellipse_solution.png'):
             mask = cv2.copyMakeBorder(
                 mask, pad, pad, pad, pad, cv2.BORDER_CONSTANT)
             cx, cy, r1, r2, theta_1, theta_plus = par
@@ -672,10 +672,14 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             # image. The region position is given by the mask
             x, y = center
             Mx, My = mask.shape
+
+            # reduces the original mask and the image to a square of a given size centred in the coordinates of centre
             x1, x2 = np.maximum(x - size // 2, 0), np.minimum(x + size // 2, Mx)
             y1, y2 = np.maximum(y - size // 2, 0), np.minimum(y + size // 2, My)
             mask = mask[x1:x2, y1:y2]
             sub_image = image[x1:x2, y1:y2]
+
+            # takes only the tissue (values for which mask == 1) pixels of the subimage
             sub_image = sub_image.reshape([-1, 3])[mask.reshape([-1]) == 1]
 
             # DEBUGGING
@@ -684,10 +688,12 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             # plt.imshow(mask)
             # plt.savefig('sub_mask')
 
+            # computes an array with the values of the occurrences of each gray scale value in the pixels of subimage
             r_hist = np.histogram(sub_image[:, 0], n_bins, range=[0, 256], density=True)[0]
             g_hist = np.histogram(sub_image[:, 1], n_bins, range=[0, 256], density=True)[0]
             b_hist = np.histogram(sub_image[:, 2], n_bins, range=[0, 256], density=True)[0]
 
+            # concatenates the 3 RGB histograms arrays
             out = np.concatenate([r_hist, g_hist, b_hist])
             return out
 
@@ -699,8 +705,10 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             data = data_dict[i]
             hx, hy = [], []
             for y, x in data["ant_points"]:
+                # calculates histograms around ant_points of a given square_size
                 H = calculate_histogram(
                     data['image'], data['tissue_mask'], [x, y], n_bins, square_size)
+                # ant_points are associated to x
                 hx.append(H)
             for y, x in data["pos_points"]:
                 H = calculate_histogram(
@@ -716,10 +724,13 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
 
         print("Calculating correlation distances between histograms for every tissue section pair...")
         histogram_dists = {}
+        # computes the combinations from 1 to 4
         for i, j in combinations(range(len(data_dict) + 1), 2):
             i = i % len(data_dict)
             j = j % len(data_dict)
+            # key of this dictionary is the tuple (i,j) with the indices of the combination
             histogram_dists[i, j] = {
+                # distances related to ant vs pos histogarms and pos vs ant histograms for the same combination
                 "ant_pos": cdist(
                     data_dict[i]['histograms_ant'], data_dict[j]['histograms_pos'],
                     metric="correlation"),
@@ -729,6 +740,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
 
         # ensuring that max distance == 1
         for i, j in histogram_dists:
+            # normalization of distances of paired histograms by each maximum
             histogram_dists[i, j]['ant_pos'] = np.divide(
                 histogram_dists[i, j]['ant_pos'], histogram_dists[i, j]['ant_pos'].max())
             histogram_dists[i, j]['pos_ant'] = np.divide(

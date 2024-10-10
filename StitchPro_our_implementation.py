@@ -69,10 +69,10 @@ if os.path.exists("/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/Multudis
     img_file_buffer_ll = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/Dataset_00/bottom_left.tif"
     img_file_buffer_ul = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/Dataset_00/upper_left.tif"
 elif os.path.exists(r"C:\Users\dicia\NL2_project\datasets\test-data-corretto"):
-    img_file_buffer_ur = r"C:\Users\dicia\NL2_project\datasets\downsampled\downsampled_2\upper_right.tif"
-    img_file_buffer_lr = r"C:\Users\dicia\NL2_project\datasets\downsampled\downsampled_2\bottom_right.tif"
-    img_file_buffer_ll = r"C:\Users\dicia\NL2_project\datasets\downsampled\downsampled_2\bottom_left.tif"
-    img_file_buffer_ul = r"C:\Users\dicia\NL2_project\datasets\downsampled\downsampled_2\upper_left.tif"
+    img_file_buffer_ur = r"C:\Users\dicia\NL2_project\datasets\downsampled\downsampled_7\upper_right.tif"
+    img_file_buffer_lr = r"C:\Users\dicia\NL2_project\datasets\downsampled\downsampled_7\bottom_right.tif"
+    img_file_buffer_ll = r"C:\Users\dicia\NL2_project\datasets\downsampled\downsampled_7\bottom_left.tif"
+    img_file_buffer_ul = r"C:\Users\dicia\NL2_project\datasets\downsampled\downsampled_7\upper_left.tif"
 else:
     img_file_buffer_ur = st.file_uploader("Upper-right (UR) fragment:", type=["tiff"])
     img_file_buffer_lr = st.file_uploader("Bottom-right (BR) fragment:", type=["tiff"])
@@ -216,7 +216,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
 
     ## Apply median filter to reduce the noise
     median_filter_ur_x = st.slider('Median filter size for UR', 5, 50, 20)
-    median_filter_lr_x = st.slider('Median filter size for BR', 5, 50, 35)
+    median_filter_lr_x = st.slider('Median filter size for BR', 5, 50, 20)
     median_filter_ll_x = st.slider('Median filter size for BL', 5, 50, 20)
     median_filter_ul_x = st.slider('Median filter size for UL', 5, 50, 20)
     image_thresholded_filtered_ul = ndi.median_filter(image_thresholded_ul, size=int(median_filter_ul_x))
@@ -226,7 +226,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
 
     ## Erode the image to eliminate holes
     closing_ur_x = st.slider('Binary closing footprint for UR', 5, 50, 15)
-    closing_lr_x = st.slider('Binary closing footprint for BR', 5, 50, 35)
+    closing_lr_x = st.slider('Binary closing footprint for BR', 5, 50, 15)
     closing_ll_x = st.slider('Binary closing footprint for BL', 5, 50, 15)
     closing_ul_x = st.slider('Binary closing footprint for UL', 5, 50, 15)
     image_thresholded_filtered_closed_ul = morphology.binary_closing(image_thresholded_filtered_ul,
@@ -336,7 +336,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
                 # json.dump(data_dict[i], file)
                 json.dump(dict((k, data_dict[i][k]) for k in ['ant_line', 'pos_line', 'ant_points', 'pos_points']), file,separators=(',', ': '))
 
-            load_fixed_dicts = True
+            load_fixed_dicts = False
             if load_fixed_dicts: # modo diverso di caricare su i json files fixati
                 paolo_path = r"C:\Users\dicia\NL2_project\debugging_series\restults_comparison\fixed_dicts\ciao"
                 if os.path.exists(paolo_path) and os.path.isdir(paolo_path):
