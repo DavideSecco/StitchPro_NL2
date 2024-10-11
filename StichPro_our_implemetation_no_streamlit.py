@@ -61,10 +61,10 @@ start_time = time.time()
 
 ## Upload images and rotate them by given angle
 if os.path.exists("/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/StitchPro/test-data/"):
-    img_file_buffer_ur = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/Dataset_06/upper_right.tif"
-    img_file_buffer_lr = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/Dataset_06/bottom_right.tif"
-    img_file_buffer_ll = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/Dataset_06/bottom_left.tif"
-    img_file_buffer_ul = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/Dataset_06/upper_left.tif"
+    img_file_buffer_ur = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/Dataset_03/upper_right.tif"
+    img_file_buffer_lr = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/Dataset_03/bottom_right.tif"
+    img_file_buffer_ll = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/Dataset_03/bottom_left.tif"
+    img_file_buffer_ul = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/Dataset_03/upper_left.tif"
 elif os.path.exists(r"C:\Users\dicia\NL2_project\datasets\test-data-corretto"):
     img_file_buffer_ur = r"C:\Users\dicia\NL2_project\datasets\downsampled\downsampled_2\upper_right.tif"
     img_file_buffer_lr = r"C:\Users\dicia\NL2_project\datasets\downsampled\downsampled_2\bottom_right.tif"
@@ -622,11 +622,15 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
 
         print(de_result)
 
-        # output_size = max([max(x.shape) for x in images_original]) * 2
-        output_size = max([max(x.shape) for x in images_original])
+        output_size = max([max(x.shape) for x in images_original]) * 2
+        #output_size = max([max(x.shape) for x in images_original])
         output_size = [output_size, output_size]
         output = np.zeros((*output_size, 3), dtype=np.int32)
         output_d = np.zeros((*output_size, 3), dtype=np.int32)
+
+        plt.figure()
+        plt.imshow(output_d)
+        plt.savefig(os.path.join(root_folder, 'debug', 'pre_output_d0_custom.png'))
 
         sc = np.array(
             [[1, 1, DOWNSAMPLE_LEVEL], [1, 1, DOWNSAMPLE_LEVEL], [0, 0, 1]])
@@ -681,10 +685,19 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
                 output[im[:, :, :] > 0] += im[im[:, :, :] > 0]
                 output_d[im[:, :, :] > 0] += 1
 
-            # DEBUGGING
-            plt.figure()
-            plt.imshow(output)
-            plt.savefig(os.path.join(root_folder, 'debug', 'pre_output_custom.png'))
+        # DEBUGGING
+        plt.figure()
+        plt.imshow(output)
+        plt.savefig(os.path.join(root_folder, 'debug', 'pre_output0_custom.png'))
+
+        # Converti output_d in un'immagine a singolo canale sommando lungo l'asse del colore (RGB)
+        output_d_single_channel = np.sum(output_d, axis=2)
+
+        # Visualizza l'immagine con una colormap
+        plt.figure()
+        plt.imshow(output_d_single_channel, cmap='hot')  # Usa una colormap per evidenziare i valori
+        plt.colorbar()  # Aggiungi una barra per visualizzare la scala dei valori
+        plt.savefig(os.path.join(root_folder, 'debug', 'output_d_colormap_fixed.png'))
 
         print("Ho finito il ciclo")
 
@@ -710,10 +723,26 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
                                                    + euclidean_distance_1_2_out + euclidean_distance_2_3_center + euclidean_distance_2_3_out
                                                    + euclidean_distance_3_0_center + euclidean_distance_3_0_out) / 8
 
+        # Cambio sfondo da nero a bianco
         output[output == 0] = 255
+        plt.figure()
+        plt.imshow(output)
+        plt.savefig(os.path.join(root_folder, 'debug', 'pre_output1_0_255_custom.png'))
+
+        print(output_d.shape)
+        # if output_d > 1 --> output/output_d
+        # else: output_d <= 1 --> output
+        # Ma siccome output_d è un'immagine nera, output rimane uguale! NO, c'è qualcosa che mi sfugge
         output = np.where(output_d > 1, output / output_d, output)
+        plt.figure()
+        plt.imshow(output)
+        plt.savefig(os.path.join(root_folder, 'debug', 'pre_output2_after_output-output_d.png'))
+
         # output[np.sum(output, axis = -1) > 650] = 0
         output = output.astype(np.uint8)
+        plt.figure()
+        plt.imshow(output)
+        plt.savefig(os.path.join(root_folder, 'debug', 'pre_output3_npuint8.png'))
 
         # imageio.imwrite("/Users/anacastroverde/Desktop/output_black.tif", output, format="tif")
 
