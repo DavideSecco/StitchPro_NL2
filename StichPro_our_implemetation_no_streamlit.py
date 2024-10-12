@@ -61,15 +61,25 @@ start_time = time.time()
 
 ## Upload images and rotate them by given angle
 if os.path.exists("/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/StitchPro/test-data/"):
-    img_file_buffer_ur = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/Dataset_03/upper_right.tif"
-    img_file_buffer_lr = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/Dataset_03/bottom_right.tif"
-    img_file_buffer_ll = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/Dataset_03/bottom_left.tif"
-    img_file_buffer_ul = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/Dataset_03/upper_left.tif"
+    img_file_buffer_ur = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/Dataset_00/upper_right.tif"
+    img_file_buffer_lr = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/Dataset_00/bottom_right.tif"
+    img_file_buffer_ll = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/Dataset_00/bottom_left.tif"
+    img_file_buffer_ul = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/Dataset_00/upper_left.tif"
 elif os.path.exists(r"C:\Users\dicia\NL2_project\datasets\test-data-corretto"):
     img_file_buffer_ur = r"C:\Users\dicia\NL2_project\datasets\downsampled\downsampled_2\upper_right.tif"
     img_file_buffer_lr = r"C:\Users\dicia\NL2_project\datasets\downsampled\downsampled_2\bottom_right.tif"
     img_file_buffer_ll = r"C:\Users\dicia\NL2_project\datasets\downsampled\downsampled_2\bottom_left.tif"
     img_file_buffer_ul = r"C:\Users\dicia\NL2_project\datasets\downsampled\downsampled_2\upper_left.tif"
+
+for i in range(len(files)):
+    # DEBUGGING
+    # create folder
+    save_dir_image_i = os.path.join(root_folder, 'debug', files[i])
+    try:
+        os.makedirs(save_dir_image_i, exist_ok=True)
+        print(f"Cartella '{save_dir_image_i}' creata con successo")
+    except OSError as e:
+        print(f"Errore nella creazione della cartella: {e}")
 
 
 if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_file_buffer_ll is not None) & (
@@ -177,13 +187,13 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
     # print(histo_fragment_gray_ul.shape)
 
     plt.imshow(histo_fragment_gray_ll, cmap="gray")
-    plt.savefig(os.path.join(save_dir, f'lower_left_gray_scale.png'))
+    plt.savefig(os.path.join(save_dir, 'bottom_left', f'lower_left_gray_scale.png'))
     plt.imshow(histo_fragment_gray_lr, cmap="gray")
-    plt.savefig(os.path.join(save_dir, f'lower_right_gray_scale.png'))
+    plt.savefig(os.path.join(save_dir, 'bottom_right', f'lower_right_gray_scale.png'))
     plt.imshow(histo_fragment_gray_ul, cmap="gray")
-    plt.savefig(os.path.join(save_dir, f'upper_left_gray_scale.png'))
+    plt.savefig(os.path.join(save_dir, 'upper_left', f'upper_left_gray_scale.png'))
     plt.imshow(histo_fragment_gray_ur, cmap="gray")
-    plt.savefig(os.path.join(save_dir, f'upper_right_gray_scale.png'))
+    plt.savefig(os.path.join(save_dir, 'upper_right', f'upper_right_gray_scale.png'))
 
     ## Intensity histogram
     hist_ul = ndi.histogram(histo_fragment_gray_ul, min=0, max=255, bins=256)
@@ -200,13 +210,13 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
     image_thresholded_ll = histo_fragment_gray_ll < thresh
 
     plt.imshow(image_thresholded_ul, cmap="gray")
-    plt.savefig(os.path.join(save_dir, f'upper_left_segmentation.png'))
+    plt.savefig(os.path.join(save_dir, 'bottom_left', f'upper_left_segmentation.png'))
     plt.imshow(image_thresholded_ur, cmap="gray")
-    plt.savefig(os.path.join(save_dir, f'upper_right_segmentation.png'))
+    plt.savefig(os.path.join(save_dir, 'bottom_right', f'upper_right_segmentation.png'))
     plt.imshow(image_thresholded_lr, cmap="gray")
-    plt.savefig(os.path.join(save_dir, f'lower_right_segmentation.png'))
+    plt.savefig(os.path.join(save_dir, 'upper_left', f'lower_right_segmentation.png'))
     plt.imshow(image_thresholded_ll, cmap="gray")
-    plt.savefig(os.path.join(save_dir, f'lower_left_segmentation.png'))
+    plt.savefig(os.path.join(save_dir, 'upper_right', f'lower_left_segmentation.png'))
 
     ## Apply median filter to reduce the noise
     median_filter_ur_x = 20
@@ -614,16 +624,105 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
 
                 x0.extend([0, a, b])
 
+        # Tracking progress
+        progress = []
+
+        # Al momento non utilizzata, ma se ne può parlare
+        def reconstruct_mosaic(H_dict, anchor, data_dict):
+            # Create an empty canvas large enough to hold the stitched image
+            canvas_height = output_size[0] * 2
+            canvas_width = output_size[1] * 2
+            canvas = np.zeros((canvas_height, canvas_width, 3), dtype=np.uint8)
+
+            # Loop over all the quadrants
+            for idx, data in enumerate(data_dict):
+                img = data['image']
+                quadrant = data['quadrant']
+
+                # Debug: Print current homography matrix
+                print(f"Quadrant: {quadrant}")
+                if quadrant in H_dict:
+                    print(f"Homography matrix for quadrant {quadrant}:")
+                    print(H_dict[quadrant])
+
+                    # Apply homography if it's not the anchor
+                    H = np.array(H_dict[quadrant], dtype=np.float32)  # Ensure it's np.float32
+                    try:
+                        warped_img = cv2.warpPerspective(img, H, (canvas_width, canvas_height))
+                    except cv2.error as e:
+                        print(f"Error warping quadrant {quadrant}: {e}")
+                        continue
+                else:
+                    # Anchor image doesn't get transformed
+                    warped_img = img
+
+                # Calculate the new position of the warped image based on the homography matrix
+                h, w = img.shape[:2]
+                pts = np.array([[0, 0], [0, h], [w, h], [w, 0]], dtype="float32").reshape(-1, 1, 2)
+                dst = cv2.perspectiveTransform(pts, H) if quadrant in H_dict else pts
+
+                # Get the bounding box of the transformed points
+                x_min, y_min = np.int32(dst.min(axis=0).ravel())
+                x_max, y_max = np.int32(dst.max(axis=0).ravel())
+
+                # Adjust the bounding box to fit the canvas
+                x_min = max(0, x_min)
+                y_min = max(0, y_min)
+                x_max = min(canvas_width, x_max)
+                y_max = min(canvas_height, y_max)
+
+                # Place the warped image onto the canvas
+                canvas[y_min:y_max, x_min:x_max] = warped_img[:(y_max - y_min), :(x_max - x_min)]
+
+            return canvas
+
+        # Gran parte della funzione non usata, ma se ne può parlare
+        def cb(xk, convergence):
+            # Compute the loss as before
+            loss_value = loss_fn(xk, quadrant_list, anchor, data_dict, histogram_dists, output_size[0] / 100, 0.1,
+                                 square_size // 2)
+            progress.append(loss_value)
+
+            # Generate the homography dictionary from the current parameters
+            # H_dict = M_to_quadrant_dict(xk, quadrant_list, anchor)
+
+            # Reconstruct the mosaic with current transformations
+            # mosaic = reconstruct_mosaic(H_dict, anchor, data_dict)
+
+            # Save the mosaic image for this iteration
+            # iteration_num = len(progress)
+            # mosaic_filename = os.path.join(root_folder, 'debug', f'mosaic_iter_{iteration_num}.png')
+            # cv2.imwrite(mosaic_filename, mosaic)
+
+            # Optionally display the mosaic image (can slow down the optimization if the display is too frequent)
+            # plt.imshow(cv2.cvtColor(mosaic, cv2.COLOR_BGR2RGB))
+            # plt.title(f'Iteration {iteration_num} - Loss: {loss_value}')
+            # plt.show()
 
         de_result = optimize.differential_evolution(
             loss_fn, bounds, popsize=POPSIZE, maxiter=MAXITER, disp=True, x0=x0,
-            mutation=[0.2, 1.0], seed=42,
+            mutation=[0.2, 1.0], seed=42, callback=cb,
             args=[quadrant_list, anchor, data_dict, histogram_dists, output_size[0] / 100, 0.1, square_size // 2])
 
         print(de_result)
 
-        output_size = max([max(x.shape) for x in images_original]) * 2
-        #output_size = max([max(x.shape) for x in images_original])
+        # Convert progress to numpy array
+        progress = np.array(progress)
+
+        # Plot progress
+        plt.plot(progress, label='Loss over iterations')
+        plt.xlabel('Iteration')
+        plt.ylabel('Loss')
+        plt.title('Optimization Progress (Loss)')
+        plt.legend()
+        plt.grid(True)
+
+        # Save plot
+        plt.savefig(os.path.join(root_folder, 'debug', 'Andamento_loss.png'))
+        plt.show()
+
+        # output_size = max([max(x.shape) for x in images_original]) * 2
+        output_size = max([max(x.shape) for x in images_original])
         output_size = [output_size, output_size]
         output = np.zeros((*output_size, 3), dtype=np.int32)
         output_d = np.zeros((*output_size, 3), dtype=np.int32)
