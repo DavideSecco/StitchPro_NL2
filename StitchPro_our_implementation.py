@@ -624,6 +624,8 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
 
         print(de_result)
 
+        # takes the max shape of the initial fragments and multiplies by 2 to obtain the length of 1 side of the final
+        # image
         output_size = max([max(x.shape) for x in images_original]) * 2
         output_size = [output_size, output_size]
         output = np.zeros((*output_size, 3), dtype=np.int32)
