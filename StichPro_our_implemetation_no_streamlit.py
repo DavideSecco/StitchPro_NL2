@@ -86,7 +86,7 @@ elif os.path.exists("/kaggle/input/"):
     img_file_buffer_ul = '/kaggle/input/dataset/Dataset_07/upper_left.tif'
     img_file_buffer_ll = '/kaggle/input/dataset/Dataset_07/bottom_left.tif'
     img_file_buffer_lr = '/kaggle/input/dataset/Dataset_07/bottom_right.tif'
-    save_dir = "/kaggle/output/debug/"
+    save_dir = "/kaggle/working/debug/"
 else:
     print("non ho trovato le immagini in input da nessuna parte!")
 
