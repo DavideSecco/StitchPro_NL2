@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from skimage.transform import hough_line, hough_line_peaks
 import math
+from utilities import Preprocessing
 
 
 class Line():
@@ -414,6 +415,7 @@ class Image_Lines():
                 print("Da non invertire")
             else:
                 print("Da invertire")
+                invert()
         elif self.quadrant == "UL":
             if self.end_ant_point[1] > self.end_pos_point[1]:
                 print("Da non invertire")
@@ -424,7 +426,6 @@ class Image_Lines():
 
 
 def main():
-    from preprocessing import Preprocessing
     parser = argparse.ArgumentParser(description="Script per line detection con trasformata di Hough.")
 
     # Definizione degli argomenti
@@ -490,7 +491,7 @@ def main():
 
     # Trasformation through hough
     image_lines = Image_Lines(prep.original_image, processed_img, save_dir)
-    # image_lines.plot_results()
+    image_lines.plot_results()
 
     return 0
 
