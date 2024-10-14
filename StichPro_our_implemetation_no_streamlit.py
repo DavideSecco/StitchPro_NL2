@@ -838,7 +838,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
         # plt.figure()
         # plt.imshow(output)
         # plt.savefig(os.path.join(root_folder, 'debug', 'pre_output1_0_255_custom.png'))
-        plt.imsave(os.path.join(root_folder, 'debug', 'pre_output1_0_255_custom.png'), output.astype('uint8'))
+        plt.imsave(os.path.join(save_dir, 'pre_output1_0_255_custom.png'), output.astype('uint8'))
 
         print(output_d.shape)
         # if output_d > 1 --> output/output_d
@@ -847,11 +847,11 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
         output = np.where(output_d > 1, output / output_d, output)
         # plt.figure()
         # plt.imshow(output)
-        plt.savefig(os.path.join(root_folder, 'debug', 'pre_output2_after_output-output_d.png'))
+        plt.savefig(os.path.join(save_dir, 'pre_output2_after_output-output_d.png'))
 
         # output[np.sum(output, axis = -1) > 650] = 0
         output = output.astype(np.uint8)
-        plt.imsave(os.path.join(root_folder, 'debug', 'pre_output3_npuint8.png'), output)
+        plt.imsave(os.path.join(save_dir, 'pre_output3_npuint8.png'), output)
 
         # imageio.imwrite("/Users/anacastroverde/Desktop/output_black.tif", output, format="tif")
 
