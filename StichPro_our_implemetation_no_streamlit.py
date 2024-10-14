@@ -50,25 +50,6 @@ print(f"root_folder: {root_folder}")
 # create folder
 save_dir = os.path.join(root_folder, 'debug')
 
-try:
-    os.makedirs(save_dir, exist_ok=True)
-    print(f"Cartella '{save_dir}' creata con successo")
-except OSError as e:
-    print(f"Errore nella creazione della cartella: {e}")
-
-for i in range(len(files)):
-    # DEBUGGING
-    # create folder
-    save_dir_image_i = os.path.join(save_dir, files[i])
-    try:
-        os.makedirs(save_dir_image_i, exist_ok=True)
-        print(f"Cartella '{save_dir_image_i}' creata con successo")
-    except OSError as e:
-        print(f"Errore nella creazione della cartella: {e}")
-
-## App description
-start_time = time.time()
-
 ## Upload images and rotate them by given angle
 if os.path.exists("/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/StitchPro/test-data/"):
     img_file_buffer_ur = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/Dataset_07/upper_right.tif"
@@ -89,6 +70,25 @@ elif os.path.exists("/kaggle/input/"):
     save_dir = "/kaggle/working/debug/"
 else:
     print("non ho trovato le immagini in input da nessuna parte!")
+
+try:
+    os.makedirs(save_dir, exist_ok=True)
+    print(f"Cartella '{save_dir}' creata con successo")
+except OSError as e:
+    print(f"Errore nella creazione della cartella: {e}")
+
+for i in range(len(files)):
+    # DEBUGGING
+    # create folder
+    save_dir_image_i = os.path.join(save_dir, files[i])
+    try:
+        os.makedirs(save_dir_image_i, exist_ok=True)
+        print(f"Cartella '{save_dir_image_i}' creata con successo")
+    except OSError as e:
+        print(f"Errore nella creazione della cartella: {e}")
+
+## App description
+start_time = time.time()
 
 
 
