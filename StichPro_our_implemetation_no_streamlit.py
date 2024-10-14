@@ -89,7 +89,7 @@ elif os.path.exists("/kaggle/input/"):
 else:
     print("non ho trovato le immagini in input da nessuna parte!")
 
-sleep(3)
+
 
 
 if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_file_buffer_ll is not None) & (
