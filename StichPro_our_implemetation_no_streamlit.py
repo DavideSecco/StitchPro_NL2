@@ -81,10 +81,13 @@ elif os.path.exists(r"C:\Users\dicia\NL2_project\datasets\test-data-corretto"):
     img_file_buffer_ll = r"C:\Users\dicia\NL2_project\datasets\downsampled\downsampled_2\bottom_left.tif"
     img_file_buffer_ul = r"C:\Users\dicia\NL2_project\datasets\downsampled\downsampled_2\upper_left.tif"
 elif os.path.exists("/kaggle/input/"):
+    print("/kaggle/input/ esiste")
     img_file_buffer_ur = '/kaggle/input/dataset/Dataset_07/upper_right.tif'
     img_file_buffer_ul = '/kaggle/input/dataset/Dataset_07/upper_left.tif'
     img_file_buffer_ll = '/kaggle/input/dataset/Dataset_07/bottom_left.tif'
     img_file_buffer_lr = '/kaggle/input/dataset/Dataset_07/bottom_right.tif'
+else:
+    print("non ho trovato le immagini in input da nessuna parte!")
 
 
 
