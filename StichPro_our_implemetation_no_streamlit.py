@@ -59,7 +59,7 @@ except OSError as e:
 for i in range(len(files)):
     # DEBUGGING
     # create folder
-    save_dir_image_i = os.path.join(root_folder, 'debug', files[i])
+    save_dir_image_i = os.path.join(save_dir, files[i])
     try:
         os.makedirs(save_dir_image_i, exist_ok=True)
         print(f"Cartella '{save_dir_image_i}' creata con successo")
@@ -86,6 +86,7 @@ elif os.path.exists("/kaggle/input/"):
     img_file_buffer_ul = '/kaggle/input/dataset/Dataset_07/upper_left.tif'
     img_file_buffer_ll = '/kaggle/input/dataset/Dataset_07/bottom_left.tif'
     img_file_buffer_lr = '/kaggle/input/dataset/Dataset_07/bottom_right.tif'
+    save_dir = os.path.join("/kaggle/output/debug/")
 else:
     print("non ho trovato le immagini in input da nessuna parte!")
 
@@ -286,7 +287,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
 
             # DEBUGGING
             # create folder
-            save_dir_image_i = os.path.join(root_folder, 'debug', files[i])
+            save_dir_image_i = os.path.join(save_dir, files[i])
             try:
                 os.makedirs(save_dir_image_i, exist_ok=True)
                 print(f"Cartella '{save_dir_image_i}' creata con successo")
@@ -728,7 +729,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
         plt.grid(True)
 
         # Save plot
-        plt.savefig(os.path.join(root_folder, 'debug', 'Andamento_loss.png'))
+        plt.savefig(os.path.join(save_dir, 'Andamento_loss.png'))
         # plt.show()
 
         output_size = max([max(x.shape) for x in images_original]) * 2
@@ -794,7 +795,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
         # plt.figure()
         # plt.imshow(output)
         # plt.savefig(os.path.join(root_folder, 'debug', 'pre_output0_custom.png'))
-        plt.imsave(os.path.join(root_folder, 'debug', 'pre_output0_custom.png'), output.astype('uint8'))
+        plt.imsave(os.path.join(save_dir, 'pre_output0_custom.png'), output.astype('uint8'))
 
         # Converti output_d in un'immagine a singolo canale sommando lungo l'asse del colore (RGB)
         output_d_single_channel = np.sum(output_d, axis=2)
@@ -803,7 +804,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
         plt.figure()
         plt.imshow(output_d_single_channel, cmap='hot')  # Usa una colormap per evidenziare i valori
         plt.colorbar()  # Aggiungi una barra per visualizzare la scala dei valori
-        plt.savefig(os.path.join(root_folder, 'debug', 'output_d_colormap_fixed.png'))
+        plt.savefig(os.path.join(save_dir, 'output_d_colormap_fixed.png'))
         # plt.close()
 
 
