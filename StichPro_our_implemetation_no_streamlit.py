@@ -63,9 +63,9 @@ parser.add_argument(
 args = parser.parse_args()
 
 dataset_folder_command_line = args.input_path
-dataset_folder_Davide = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/Dataset_03/"
+dataset_folder_Davide = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/Dataset_03"
 dataset_folder_Paolo = r"C:\Users\dicia\NL2_project\datasets\test-data-corretto"
-dataset_folder_Kaggle = "/kaggle/input/"
+dataset_folder_Kaggle = "/kaggle/input"
 
 print(dataset_folder_command_line)
 
@@ -86,7 +86,7 @@ img_file_buffer_ll = os.path.join(dataset_folder, 'bottom_left.tif')
 img_file_buffer_ul = os.path.join(dataset_folder, 'upper_left.tif')
 
 # Ottengo il nome del dataset, cosi da poter successivamente creare una sottocartella in debug con lo stesso nome
-folder_name = os.path.basename(os.path.dirname(dataset_folder))
+folder_name = os.path.basename(dataset_folder)
 
 # DEBUGGING
 # create folder
@@ -900,8 +900,8 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
 
         # Crea un dizionario con i risultati
         result_data = {
-            "fun": de_result.fun,  # Valore della funzione obiettivo
             "success": de_result.success,  # Esito dell'ottimizzazione
+            "fun": de_result.fun,  # Valore della funzione obiettivo
             "work_time": work_time  # Tempo di esecuzione
         }
 
