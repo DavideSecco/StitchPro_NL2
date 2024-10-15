@@ -46,30 +46,49 @@ files = ["upper_right", "bottom_right", "bottom_left", "upper_left"]
 root_folder = os.getcwd()
 print(f"root_folder: {root_folder}")
 
+########################################
+### Leggo percorso delle immagini ######
+########################################
+
+# Possibilità 1: Passo il percorso della cartella tramite command line
+parser = argparse.ArgumentParser(description="Script per caricare e ruotare immagini")
+parser.add_argument(
+    '--input_path',
+    type=str,
+    default=None,  # Se non viene fornito dall'utente, rimane None
+    help="Percorso opzionale per le immagini"
+)
+
+# Parsing degli argomenti
+args = parser.parse_args()
+
+dataset_folder_command_line = args.input_path
+dataset_folder_Davide = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/Dataset_03/"
+dataset_folder_Paolo = r"C:\Users\dicia\NL2_project\datasets\test-data-corretto"
+dataset_folder_Kaggle = "/kaggle/input/"
+
+if dataset_folder_command_line and os.path.exists(dataset_folder_command_line):
+    dataset_folder = dataset_folder_command_line
+elif os.path.exists(dataset_folder_Davide):
+    dataset_folder = dataset_folder_Davide
+if os.path.exists(dataset_folder_Paolo):
+    dataset_folder = dataset_folder_Paolo
+elif os.path.exists(dataset_folder_Kaggle):
+    dataset_folder = dataset_folder_Kaggle
+
+print(f"Percorso del dataset che analizzo: {dataset_folder}")
+
+img_file_buffer_ur = os.path.join(dataset_folder, 'upper_right.tif')
+img_file_buffer_lr = os.path.join(dataset_folder, 'bottom_right.tif')
+img_file_buffer_ll = os.path.join(dataset_folder, 'bottom_left.tif')
+img_file_buffer_ul = os.path.join(dataset_folder, 'upper_left.tif')
+
+# Ottengo il nome del dataset, cosi da poter successivamente creare una sottocartella in debug con lo stesso nome
+folder_name = os.path.basename(os.path.dirname(dataset_folder))
+
 # DEBUGGING
 # create folder
-save_dir = os.path.join(root_folder, 'debug')
-
-## Upload images and rotate them by given angle
-if os.path.exists("/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/StitchPro/test-data/"):
-    img_file_buffer_ur = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/Dataset_07/upper_right.tif"
-    img_file_buffer_lr = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/Dataset_07/bottom_right.tif"
-    img_file_buffer_ll = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/Dataset_07/bottom_left.tif"
-    img_file_buffer_ul = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/Dataset_07/upper_left.tif"
-elif os.path.exists(r"C:\Users\dicia\NL2_project\datasets\test-data-corretto"):
-    img_file_buffer_ur = r"C:\Users\dicia\NL2_project\datasets\downsampled\downsampled_2\upper_right.tif"
-    img_file_buffer_lr = r"C:\Users\dicia\NL2_project\datasets\downsampled\downsampled_2\bottom_right.tif"
-    img_file_buffer_ll = r"C:\Users\dicia\NL2_project\datasets\downsampled\downsampled_2\bottom_left.tif"
-    img_file_buffer_ul = r"C:\Users\dicia\NL2_project\datasets\downsampled\downsampled_2\upper_left.tif"
-elif os.path.exists("/kaggle/input/"):
-    print("/kaggle/input/ esiste")
-    img_file_buffer_ur = '/kaggle/input/dataset/Dataset_07/upper_right.tif'
-    img_file_buffer_ul = '/kaggle/input/dataset/Dataset_07/upper_left.tif'
-    img_file_buffer_ll = '/kaggle/input/dataset/Dataset_07/bottom_left.tif'
-    img_file_buffer_lr = '/kaggle/input/dataset/Dataset_07/bottom_right.tif'
-    save_dir = "/kaggle/working/debug/"
-else:
-    print("non ho trovato le immagini in input da nessuna parte!")
+save_dir = os.path.join(root_folder, 'debug', folder_name)
 
 try:
     os.makedirs(save_dir, exist_ok=True)
@@ -807,8 +826,6 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
         plt.savefig(os.path.join(save_dir, 'output_d_colormap_fixed.png'))
         # plt.close()
 
-
-
         print("Ho finito il ciclo")
 
         euclidean_distance_0_1_center = np.sqrt(
@@ -879,8 +896,20 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
         elapsed_time = end_time - start_time
         work_time = end_time - start_stiching_time
 
-        print("Oh qui ho modificato la loss!")
+        # Crea un dizionario con i risultati
+        result_data = {
+            "fun": de_result.fun,  # Valore della funzione obiettivo
+            "success": de_result.success,  # Esito dell'ottimizzazione
+            "work_time": work_time  # Tempo di esecuzione
+        }
 
-        print(f"Execution time: {work_time} seconds")
+        # Percorso completo del file
+        save_path_result = os.path.join(save_dir, "results_custom.json")
+
+        # Salva i risultati in un file JSON nella directory specificata
+        with open(save_path_result, "w") as json_file:
+            json.dump(result_data, json_file, indent=4)
+
+        print(result_data)
         # print('Total execution time of algorithm:', round(elapsed_time, 2), 'seconds')
 
