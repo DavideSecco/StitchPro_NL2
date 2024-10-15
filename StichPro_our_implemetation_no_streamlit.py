@@ -73,7 +73,7 @@ if os.path.exists(dataset_folder_command_line):
     dataset_folder = dataset_folder_command_line
 elif os.path.exists(dataset_folder_Davide):
     dataset_folder = dataset_folder_Davide
-if os.path.exists(dataset_folder_Paolo):
+elif os.path.exists(dataset_folder_Paolo):
     dataset_folder = dataset_folder_Paolo
 elif os.path.exists(dataset_folder_Kaggle):
     dataset_folder = dataset_folder_Kaggle
