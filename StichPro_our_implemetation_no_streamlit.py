@@ -67,7 +67,7 @@ dataset_folder_Davide = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/Mu
 dataset_folder_Paolo = r"C:\Users\dicia\NL2_project\datasets\test-data-corretto"
 dataset_folder_Kaggle = "/kaggle/input/"
 
-if dataset_folder_command_line and os.path.exists(dataset_folder_command_line):
+if os.path.exists(dataset_folder_command_line):
     dataset_folder = dataset_folder_command_line
 elif os.path.exists(dataset_folder_Davide):
     dataset_folder = dataset_folder_Davide
