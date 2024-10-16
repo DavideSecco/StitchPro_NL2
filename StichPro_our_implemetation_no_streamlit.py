@@ -39,7 +39,7 @@ import gc
 gc.collect()
 
 # IMPORT OUR CLASSES
-from utilities import Preprocessing, Line, Image_Lines
+from utilities import Preprocessing, Line, Image_Lines, save_csv
 
 # Names
 files = ["upper_right", "bottom_right", "bottom_left", "upper_left"]
@@ -900,10 +900,13 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
 
         # Crea un dizionario con i risultati
         result_data = {
+            "dataset": folder_name,
             "success": de_result.success,  # Esito dell'ottimizzazione
             "fun": de_result.fun,  # Valore della funzione obiettivo
             "work_time": work_time  # Tempo di esecuzione
         }
+
+        save_csv.salva_in_csv("result_data", "results_custom")
 
         # Percorso completo del file
         save_path_result = os.path.join(save_dir, "results_custom.json")

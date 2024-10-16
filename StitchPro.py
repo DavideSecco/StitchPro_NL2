@@ -64,10 +64,10 @@ start_time = time.time()
 
 ## Upload images and rotate them by given angle
 if os.path.exists("/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/StitchPro/test-data/"):
-    img_file_buffer_ur = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/Dataset_00/upper_right.tif"
-    img_file_buffer_lr = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/Dataset_00/bottom_right.tif"
-    img_file_buffer_ll = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/Dataset_00/bottom_left.tif"
-    img_file_buffer_ul = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/Dataset_00/upper_left.tif"
+    img_file_buffer_ur = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/Dataset_07/upper_right.tif"
+    img_file_buffer_lr = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/Dataset_07/bottom_right.tif"
+    img_file_buffer_ll = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/Dataset_07/bottom_left.tif"
+    img_file_buffer_ul = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/Dataset_07/upper_left.tif"
 elif os.path.exists(r"C:\Users\dicia\NL2_project\datasets\test-data-corretto"):
     img_file_buffer_ur = r"C:\Users\dicia\NL2_project\datasets\test-data-corretto\ur.tif"
     img_file_buffer_lr = r"C:\Users\dicia\NL2_project\datasets\test-data-corretto\lr-rotated.tif"
