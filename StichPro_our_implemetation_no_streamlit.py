@@ -31,6 +31,8 @@ import tifffile
 from tiatoolbox.wsicore import WSIReader
 import time
 import json
+import sys
+from pathlib import Path
 
 import matplotlib.pyplot as plt  # DEBUGGING
 
@@ -63,7 +65,7 @@ parser.add_argument(
 args = parser.parse_args()
 
 dataset_folder_command_line = args.input_path
-dataset_folder_Davide = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/Dataset_03"
+dataset_folder_Davide = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/artificial/"
 dataset_folder_Paolo = r"C:\Users\dicia\NL2_project\datasets\test-data-corretto"
 dataset_folder_Kaggle = "/kaggle/input"
 
@@ -80,16 +82,34 @@ elif os.path.exists(dataset_folder_Kaggle):
 
 print(f"Percorso del dataset che analizzo: {dataset_folder}")
 
-img_file_buffer_ur = os.path.join(dataset_folder, 'upper_right.tif')
-img_file_buffer_lr = os.path.join(dataset_folder, 'bottom_right.tif')
-img_file_buffer_ll = os.path.join(dataset_folder, 'bottom_left.tif')
-img_file_buffer_ul = os.path.join(dataset_folder, 'upper_left.tif')
+# Controllo che i file dei frammenti esistano all'interno della cartella
+try:
+    # Percorsi dei file
+    img_file_buffer_ur = os.path.join(dataset_folder, 'upper_right.tif')
+    img_file_buffer_lr = os.path.join(dataset_folder, 'bottom_right.tif')
+    img_file_buffer_ll = os.path.join(dataset_folder, 'bottom_left.tif')
+    img_file_buffer_ul = os.path.join(dataset_folder, 'upper_left.tif')
+
+    # Lista dei file da controllare
+    required_files = [img_file_buffer_ur, img_file_buffer_lr, img_file_buffer_ll, img_file_buffer_ul]
+
+    # Controlla se ogni file esiste
+    for file_path in required_files:
+        if not os.path.exists(file_path):
+            # Solleva un'eccezione in caso di file mancante
+            raise FileNotFoundError(f"Il file {file_path} non esiste nella cartella {dataset_folder}.")
+
+    print(f"Tutti i file richiesti esistono nella cartella {dataset_folder}.")
+
+except FileNotFoundError as e:
+    # Gestisce l'eccezione, stampa l'errore e termina il programma
+    print(f"Errore: {e}")
+    sys.exit(1)  # Esce con un codice di errore
 
 # Ottengo il nome del dataset, cosi da poter successivamente creare una sottocartella in debug con lo stesso nome
 folder_name = os.path.basename(dataset_folder)
 
-# DEBUGGING
-# create folder
+# create folder for debugging
 save_dir = os.path.join(root_folder, 'debug', folder_name)
 
 try:
@@ -906,7 +926,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             "work_time": work_time  # Tempo di esecuzione
         }
 
-        save_csv.salva_in_csv("result_data", "results_custom")
+        save_csv.salva_in_csv(result_data, Path(save_dir).parent, "results_custom.csv")
 
         # Percorso completo del file
         save_path_result = os.path.join(save_dir, "results_custom.json")
