@@ -2,33 +2,32 @@ import csv
 import os
 
 
-def salva_in_csv(dizionario, nome_file_csv):
-    # Verifica se il file esiste
-    file_esiste = os.path.isfile(nome_file_csv)
+def salva_in_csv(dizionario, path, nome_file_csv):
+    # Crea il percorso completo del file
+    percorso_completo = os.path.join(path, nome_file_csv)
 
-    # Apri il file in modalità append o scrittura (crea il file se non esiste)
-    with open(nome_file_csv, mode='a' if file_esiste else 'w', newline='') as file_csv:
+    # Prepara i dati da scrivere nella riga
+    riga = [dizionario['dataset'], dizionario['success'], dizionario['fun'], dizionario['work_time']]
+
+    # Leggi le righe esistenti se il file esiste
+    righe = []
+    if os.path.isfile(percorso_completo):
+        with open(percorso_completo, 'r', newline='') as file_letto:
+            righe = list(csv.reader(file_letto))
+
+    # Apri il file in modalità scrittura
+    with open(percorso_completo, 'w', newline='') as file_csv:
         writer = csv.writer(file_csv)
 
-        # Se il file è appena creato, scrivi l'intestazione
-        if not file_esiste:
+        # Se il file è vuoto o non esiste, scrivi l'intestazione
+        if not righe:
             writer.writerow(['Descrizione', 'Success', 'Fun', 'Work Time'])
 
-        # Prepara i dati da scrivere nella riga
-        riga = ["Dataset_interopassato", dizionario['success'], dizionario['fun'], dizionario['work_time']]
+        # Scrivi le righe precedenti
+        writer.writerows(righe)
 
-        # Leggi le righe esistenti se il file esiste
-        if file_esiste:
-            with open(nome_file_csv, 'r', newline='') as file_letto:
-                righe = list(csv.reader(file_letto))
-
-            # Scrivi il contenuto aggiornato nel file
-            with open(nome_file_csv, 'w', newline='') as file_scrittura:
-                writer = csv.writer(file_scrittura)
-                writer.writerows(righe)
-        else:
-            # Se il file non esiste, scrivi semplicemente la nuova riga
-            writer.writerow(riga)
+        # Aggiungi la nuova riga
+        writer.writerow(riga)
 
 if __name__ == "__main__":
     result_data = {
