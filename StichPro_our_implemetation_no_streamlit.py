@@ -34,14 +34,14 @@ import json
 import sys
 from pathlib import Path
 
-import matplotlib.pyplot as plt  # DEBUGGING
+import matplotlib.pyplot as plt
 
 import gc
 
 gc.collect()
 
 # IMPORT OUR CLASSES
-from utilities import Preprocessing, Line, Image_Lines, save_csv
+from utilities import Preprocessing, Line, Image_Lines, saving_functions
 
 # Names
 files = ["upper_right", "bottom_right", "bottom_left", "upper_left"]
@@ -127,6 +127,9 @@ for i in range(len(files)):
         print(f"Cartella '{save_dir_image_i}' creata con successo")
     except OSError as e:
         print(f"Errore nella creazione della cartella: {e}")
+
+## FLAGS
+show_all_images = False
 
 ## App description
 start_time = time.time()
@@ -232,20 +235,16 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
     histo_fragment_gray_binary_ur = color.rgb2gray(histo_fragment_ur)
     histo_fragment_gray_ur = (histo_fragment_gray_binary_ur * 255).astype('uint8')
 
-    # print("Dimensioni dopo grayscale:")
-    # print(histo_fragment_gray_ur.shape)
-    # print(histo_fragment_gray_lr.shape)
-    # print(histo_fragment_gray_ll.shape)
-    # print(histo_fragment_gray_ul.shape)
 
-    plt.imshow(histo_fragment_gray_ll, cmap="gray")
-    plt.savefig(os.path.join(save_dir, 'bottom_left', f'lower_left_gray_scale.png'))
-    plt.imshow(histo_fragment_gray_lr, cmap="gray")
-    plt.savefig(os.path.join(save_dir, 'bottom_right', f'lower_right_gray_scale.png'))
-    plt.imshow(histo_fragment_gray_ul, cmap="gray")
-    plt.savefig(os.path.join(save_dir, 'upper_left', f'upper_left_gray_scale.png'))
-    plt.imshow(histo_fragment_gray_ur, cmap="gray")
-    plt.savefig(os.path.join(save_dir, 'upper_right', f'upper_right_gray_scale.png'))
+    if show_all_images:
+        plt.imshow(histo_fragment_gray_ll, cmap="gray")
+        plt.savefig(os.path.join(save_dir, 'bottom_left', f'lower_left_gray_scale.png'))
+        plt.imshow(histo_fragment_gray_lr, cmap="gray")
+        plt.savefig(os.path.join(save_dir, 'bottom_right', f'lower_right_gray_scale.png'))
+        plt.imshow(histo_fragment_gray_ul, cmap="gray")
+        plt.savefig(os.path.join(save_dir, 'upper_left', f'upper_left_gray_scale.png'))
+        plt.imshow(histo_fragment_gray_ur, cmap="gray")
+        plt.savefig(os.path.join(save_dir, 'upper_right', f'upper_right_gray_scale.png'))
 
     ## Intensity histogram
     hist_ul = ndi.histogram(histo_fragment_gray_ul, min=0, max=255, bins=256)
@@ -261,14 +260,15 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
     image_thresholded_lr = histo_fragment_gray_lr < thresh
     image_thresholded_ll = histo_fragment_gray_ll < thresh
 
-    plt.imshow(image_thresholded_ul, cmap="gray")
-    plt.savefig(os.path.join(save_dir, 'bottom_left', f'upper_left_segmentation.png'))
-    plt.imshow(image_thresholded_ur, cmap="gray")
-    plt.savefig(os.path.join(save_dir, 'bottom_right', f'upper_right_segmentation.png'))
-    plt.imshow(image_thresholded_lr, cmap="gray")
-    plt.savefig(os.path.join(save_dir, 'upper_left', f'lower_right_segmentation.png'))
-    plt.imshow(image_thresholded_ll, cmap="gray")
-    plt.savefig(os.path.join(save_dir, 'upper_right', f'lower_left_segmentation.png'))
+    if show_all_images:
+        plt.imshow(image_thresholded_ul, cmap="gray")
+        plt.savefig(os.path.join(save_dir, 'bottom_left', f'upper_left_segmentation.png'))
+        plt.imshow(image_thresholded_ur, cmap="gray")
+        plt.savefig(os.path.join(save_dir, 'bottom_right', f'upper_right_segmentation.png'))
+        plt.imshow(image_thresholded_lr, cmap="gray")
+        plt.savefig(os.path.join(save_dir, 'upper_left', f'lower_right_segmentation.png'))
+        plt.imshow(image_thresholded_ll, cmap="gray")
+        plt.savefig(os.path.join(save_dir, 'upper_right', f'lower_left_segmentation.png'))
 
     ## Apply median filter to reduce the noise
     median_filter_ur_x = 20
@@ -334,13 +334,14 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
                 print(f"Cartella '{save_dir_image_i}' creata con successo")
             except OSError as e:
                 print(f"Errore nella creazione della cartella: {e}")
-            plt.figure(figsize=(50, 50))
-            plt.imshow(x, cmap='gray')  # DEBUGGING
-            plt.savefig(os.path.join(save_dir_image_i, f'{files[i]}_tissue_mask.png'))
 
-            plt.figure(figsize=(50, 50))
-            plt.imshow(x_out, cmap='gray')
-            plt.savefig(os.path.join(save_dir_image_i, f'{files[i]}_tissue_mask_closed.png'))
+            if show_all_images:
+                plt.figure(figsize=(50, 50))
+                plt.imshow(x, cmap='gray')  # DEBUGGING
+                plt.savefig(os.path.join(save_dir_image_i, f'{files[i]}_tissue_mask.png'))
+                plt.figure(figsize=(50, 50))
+                plt.imshow(x_out, cmap='gray')
+                plt.savefig(os.path.join(save_dir_image_i, f'{files[i]}_tissue_mask_closed.png'))
 
             ######################### INIZIO NOSTRA IMPLEMENTAZIONE ############################################
 
@@ -361,112 +362,11 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
                 "pos_points": image_lines.pos_points})
             print("\n")
 
-            # print("Riassunto dati trovati trovati per quadrante:", data_dict[i]["quadrant"])
-            # print("image shape:", data_dict[i]["image"].shape)
-            # print("tissue_mask:", data_dict[i]["tissue_mask"].shape)
-            # print("tissue_mask_closed:", data_dict[i]["tissue_mask_closed"].shape)
-            # print("ant_line:", data_dict[i]["ant_line"])
-            # print("pos_line", data_dict[i]["pos_line"])
+            # saves the data_dict of our implementation in json format
+            saving_functions.save_data_dict(data_dict, i, save_dir_image_i)
 
-            # print("type data_dict: ", type(data_dict))
-            # print(type(data_dict[i]["image"]))
-            # print(type(data_dict[i]["tissue_mask"]))
-            # print(type(data_dict[i]["tissue_mask_closed"]))
-            # print(type(data_dict[i]["quadrant"]))
-            # print(type(data_dict[i]["ant_line"]))
-            # print(type(data_dict[i]["pos_line"]))
-            # print(type(data_dict[i]["ant_points"]))
-            # print(type(data_dict[i]["pos_points"]))
-
-            # COnversion needed since you can't save a nparray in a json file
-            data_dict[i]['image'] = data_dict[i]['image'].tolist()
-            data_dict[i]['tissue_mask'] = data_dict[i]['tissue_mask'].tolist()
-            data_dict[i]['tissue_mask_closed'] = data_dict[i]['tissue_mask_closed'].tolist()
-            data_dict[i]['ant_line'] = data_dict[i]['ant_line'].tolist()
-            data_dict[i]['pos_line'] = data_dict[i]['pos_line'].tolist()
-            data_dict[i]['ant_points'] = data_dict[i]['ant_points'].tolist()
-            data_dict[i]['pos_points'] = data_dict[i]['pos_points'].tolist()
-
-            # Save as json
-            with open(os.path.join(save_dir_image_i, "data_dict.json"), "w") as file:
-                # json.dump(data_dict[i], file)
-                json.dump(dict((k, data_dict[i][k]) for k in ['ant_line', 'pos_line', 'ant_points', 'pos_points']),
-                          file, separators=(',', ': '))
-
-            load_fixed_dicts = True
-            if load_fixed_dicts:  # modo diverso di caricare su i json files fixati
-                paolo_path = r"C:\Users\dicia\NL2_project\debugging_series\restults_comparison\fixed_dicts\ciao"
-                if os.path.exists(paolo_path) and os.path.isdir(paolo_path):
-                    filepath = f"data_dict_fixed_{i}.json"
-                    try:
-                        with open(os.path.join(paolo_path, filepath), "r") as file:
-                            data_dict[i] = json.load(file)
-                    except FileNotFoundError:
-                        print(f"file {os.path.join(paolo_path, filepath)} non trovato")
-                    except json.JSONDecodeError:
-                        print(f"errore nella decodifica del file json {os.path.join(paolo_path, filepath)}")
-                # else:  # To load it back (it will load the array as a list)
-                #    with open(os.path.join(save_dir_image_i, "data_dict_fixed.json"), "r") as file:
-                #       data_dict[i] = json.load(file)
-                # loaded_dict['data'] = np.array(loaded_dict['data'])  # Convert back to ndarray
-
-            # print(f"Keys in data_dict[{i}]: {list(data_dict[i].keys())}")
-            # Li faccio tornare nparray perchè serve cosi dopo
-            data_dict[i]['image'] = np.array(data_dict[i]['image'])
-            data_dict[i]['tissue_mask'] = np.array(data_dict[i]['tissue_mask'])
-            data_dict[i]['tissue_mask_closed'] = np.array(data_dict[i]['tissue_mask_closed'])
-            data_dict[i]['ant_line'] = np.array(data_dict[i]['ant_line'])
-            data_dict[i]['pos_line'] = np.array(data_dict[i]['pos_line'])
-            data_dict[i]['ant_points'] = np.array(data_dict[i]['ant_points'])
-            data_dict[i]['pos_points'] = np.array(data_dict[i]['pos_points'])
-
-            # Crea una figura con 3 sottotrame
-            fig, axs = plt.subplots(2, 3, figsize=(15, 5))  # 1 riga, 3 colonne
-            ax = axs.ravel()
-            # Visualizza ciascuna immagine in una sottotrama
-            ax[0].imshow(data_dict[i]["image"])
-            ax[0].axis('off')  # Nasconde gli assi opzionale
-
-            ax[1].imshow(data_dict[i]["tissue_mask"], cmap="gray")
-            ax[1].axis('off')
-
-            ax[2].imshow(data_dict[i]["tissue_mask_closed"], cmap="gray")
-            ax[2].axis('off')
-
-            # Mostra la visualizzazione con le tre immagini
-            # plt.show()
-
-            # Stampo i punti
-            # aux_mask = cv2.cvtColor(aux_mask, cv2.COLOR_GRAY2RGB)
-            aux_mask = data_dict[i]["tissue_mask_closed"]
-            # Convert aux_mask from CV_32S to CV_8U
-            aux_mask = aux_mask.astype(np.uint8)
-            aux_mask = cv2.cvtColor(aux_mask, cv2.COLOR_GRAY2RGB)
-            # disegna i punti per sola visualizzazione
-            for point in data_dict[i]['ant_points']:
-                cv2.drawMarker(aux_mask, tuple(point), color=(255, 255, 0), markerType=cv2.MARKER_SQUARE, markerSize=3,
-                               thickness=2)
-
-            for point in data_dict[i]['pos_points']:
-                cv2.drawMarker(aux_mask, tuple(point), color=(255, 0, 0), markerType=cv2.MARKER_SQUARE, markerSize=3,
-                               thickness=2)
-
-            ax[3].imshow(aux_mask)
-            ax[3].set_title("Contorni")
-
-            aux_mask2 = data_dict[i]["tissue_mask_closed"]
-            ax[4].imshow(aux_mask2)
-            # Plot the line over the image
-            ax[4].axline(data_dict[i]["ant_line"][0], xy2=data_dict[i]["ant_line"][1], color='yellow', linewidth=2,
-                         marker='o')
-            ax[4].axline(data_dict[i]["pos_line"][0], xy2=data_dict[i]["pos_line"][1], color='red', linewidth=2,
-                         marker='o')
-
-            plt.tight_layout()
-
-            plt.savefig(os.path.join(save_dir_image_i, 'data_dict'), dpi=300)
-
-            plt.close("all")
+            # saves important information of data_dict (debugging)
+            saving_functions.save_images_data_dict(data_dict, i, save_dir_image_i)
 
         ############### FINE NOSTRA IMPLEMENTAZIONE #################################
 
@@ -926,7 +826,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             "work_time": work_time  # Tempo di esecuzione
         }
 
-        save_csv.salva_in_csv(result_data, Path(save_dir).parent, "results_custom.csv")
+        saving_functions.salva_in_csv(result_data, Path(save_dir).parent, "results_custom.csv")
 
         # Percorso completo del file
         save_path_result = os.path.join(save_dir, "results_custom.json")
