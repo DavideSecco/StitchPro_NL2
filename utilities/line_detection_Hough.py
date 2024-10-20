@@ -84,6 +84,7 @@ class Line():
         return (f"Linea(x0={self.x0}, y0={self.y0}, slope={self.slope}, angle={self.angle}) \n"
                 f"Punti finali di tutti i punti: {self.cordinate_points[0]} {self.cordinate_points[-1]} \n")
 
+
 class Image_Lines():
     """
     A class to represent the fragment mask (edges), and the lines found on it. Then finds the fragment borders
@@ -145,7 +146,7 @@ class Image_Lines():
             threshold *= 0.9
             peaks = hough_line_peaks(self.h, self.theta, self.d, threshold = threshold * np.max(self.h))
 
-            print(f"Ho trovato {len(peaks[0])} peaks:", peaks)
+        print(f"Ho trovato {len(peaks[0])} peaks:", peaks)
         return [Line(angle, dist, self.image) for _, angle, dist in zip(*peaks)]
 
     def extract_points_on_border(self, index):
@@ -197,7 +198,8 @@ class Image_Lines():
                 filtered_lines_index.append(index)
                 print("added")
             else:
-                print("Why:")
+                print("Not added")
+                print("Because:")
                 print("Angle:", abs(self.lines[index].angle), " > np.pi/20: ", np.pi /20)
                 print("Angle - np.pi/2: ", abs(self.lines[index].angle - np.pi / 2), " > np.pi/20: ", np.pi / 20)
                 print("Angle + np.pi/2: ", abs(self.lines[index].angle + np.pi / 2), " > np.pi/20: ", np.pi / 20)
@@ -364,9 +366,9 @@ class Image_Lines():
             plt.show()
 
     def identify_quadrant(self):
-        print("self.intersection: ", self.intersection)
-        print("self.image.shape[0]:", self.image.shape[0])
-        print("self.image.shape[1]:", self.image.shape[1])
+        # print("self.intersection: ", self.intersection)
+        # print("self.image.shape[0]:", self.image.shape[0])
+        # print("self.image.shape[1]:", self.image.shape[1])
 
         # 1) capire in che zona è l'intersezione cosi da identificare la posizione del frammento
         if self.intersection[1] >= int(self.image.shape[0] / 2) and self.intersection[0] >= int(self.image.shape[1] / 2):
@@ -422,7 +424,6 @@ class Image_Lines():
             else:
                 print("Da invertire")
                 invert()
-
 
 
 def main():

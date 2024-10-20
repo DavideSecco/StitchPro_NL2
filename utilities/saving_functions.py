@@ -7,6 +7,23 @@ import json
 
 
 def salva_in_csv(dizionario, path, nome_file_csv):
+    """
+    Saves dictionary data into a CSV file, appending it to existing rows if the file exists.
+
+    This function takes a dictionary containing information about a dataset and saves it into a CSV file at the
+    specified path. If the file does not exist, it is created with a header. If the file exists, new data is appended
+    to the existing rows.
+
+    Args:
+        dizionario (dict): A dictionary containing the data to be saved. It must include the keys
+            'dataset' (description of the dataset), 'success' (operation result),
+            'fun' (function name), and 'work_time' (execution time).
+        path (str): The path to the directory where the CSV file will be saved.
+        nome_file_csv (str): The name of the CSV file.
+
+    Returns:
+        None: The function writes the data to the CSV file without returning any value.
+    """
     # Crea il percorso completo del file
     percorso_completo = os.path.join(path, nome_file_csv)
 
@@ -35,6 +52,23 @@ def salva_in_csv(dizionario, path, nome_file_csv):
 
 
 def save_images_data_dict(data_dict, i, save_dir_image_i):
+    """
+    Saves and visualizes various images and annotations from a data dictionary.
+
+    This function creates a figure with multiple subplots showing different components of the
+    data, including the original image, tissue masks, closed masks, and annotated points and lines.
+    The final image is saved to the specified directory.
+
+    Args:
+        data_dict (dict): A dictionary containing image data and annotations. The dictionary
+            must include keys such as 'image', 'tissue_mask', 'tissue_mask_closed', 'ant_points',
+            'pos_points', 'ant_line', and 'pos_line'.
+        i (int): The index of the image in the data dictionary to visualize and save.
+        save_dir_image_i (str): The directory path where the final image visualization will be saved.
+
+    Returns:
+        None: The function saves the image to the specified directory and closes all plots.
+    """
     # Crea una figura con 3 sottotrame
     fig, axs = plt.subplots(2, 3, figsize=(15, 5))  # 1 riga, 3 colonne
     ax = axs.ravel()
@@ -85,6 +119,24 @@ def save_images_data_dict(data_dict, i, save_dir_image_i):
 
 
 def save_data_dict(data_dict, i, save_dir_image_i):
+    """
+    Converts NumPy arrays to lists in a data dictionary and saves it as a JSON file.
+
+    This function converts NumPy arrays in the data dictionary to lists for compatibility
+    with JSON serialization. After saving the data as JSON, the lists are converted back to
+    NumPy arrays to restore the original structure.
+
+    Args:
+        data_dict (dict): A dictionary containing image data and annotations. The dictionary
+            must include keys such as 'image', 'tissue_mask', 'tissue_mask_closed', 'ant_line',
+            'pos_line', 'ant_points', and 'pos_points'.
+        i (int): The index of the image in the data dictionary to process and save.
+        save_dir_image_i (str): The directory path where the JSON file will be saved.
+
+    Returns:
+        None: The function saves the JSON file to the specified directory and restores
+        the original NumPy arrays in the data dictionary.
+    """
     # Conversion needed since you can't save a nparray in a json file
     data_dict[i]['image'] = data_dict[i]['image'].tolist()
     data_dict[i]['tissue_mask'] = data_dict[i]['tissue_mask'].tolist()

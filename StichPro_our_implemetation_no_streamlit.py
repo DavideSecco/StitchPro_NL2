@@ -33,7 +33,9 @@ import time
 import json
 import sys
 from pathlib import Path
-
+from skimage.transform import AffineTransform
+from scipy.optimize import NonlinearConstraint
+from scipy import optimize
 import matplotlib.pyplot as plt
 
 import gc
@@ -42,6 +44,7 @@ gc.collect()
 
 # IMPORT OUR CLASSES
 from utilities import Preprocessing, Line, Image_Lines, saving_functions
+from utilities.optimization_function import *
 
 # Names
 files = ["upper_right", "bottom_right", "bottom_left", "upper_left"]
@@ -128,13 +131,20 @@ for i in range(len(files)):
     except OSError as e:
         print(f"Errore nella creazione della cartella: {e}")
 
-## FLAGS
+
+# FLAGS and GLOBALS
 show_all_images = False
+square_size = 64
+n_bins = 32
+POPSIZE = 25  # parameter for the evolutionary optimization (population size)
+MAXITER = 200  # parameter for the evolutionary optimization (population size)
+DOWNSAMPLE_LEVEL = 4  # avoid running the optimization for the entire image
 
-## App description
+# Set seed
+np.random.seed(42)
+
+# App description
 start_time = time.time()
-
-
 
 
 if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_file_buffer_ll is not None) & (
@@ -148,13 +158,6 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
     histo_fragment_ll = imageio.imread(img_file_buffer_ll)
 
     histo_fragment_ul = imageio.imread(img_file_buffer_ul)
-
-
-    # print("Dimensioni originali immagini")
-    # print(histo_fragment_ur.shape)
-    # print(histo_fragment_lr.shape)
-    # print(histo_fragment_ll.shape)
-    # print(histo_fragment_ul.shape)
 
     # Rotate images if user use the option
     angle_options = [-90, 0, 90, 180]
@@ -204,8 +207,6 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
     sub_bound_y = 550
 
     # Downsample the images
-    # ATTENZIONE il livello di downsampling prima era settato a 4
-    DOWNSAMPLE_LEVEL = 4  # avoid running the optimization for the entire image
     add = 0
     histo_fragment_lr = rescale(histo_fragment_lr, 1 / DOWNSAMPLE_LEVEL, channel_axis=2,
                                 preserve_range=True).astype(np.uint8)
@@ -216,15 +217,9 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
     histo_fragment_ul = rescale(histo_fragment_ul, 1 / DOWNSAMPLE_LEVEL, channel_axis=2,
                                 preserve_range=True).astype(np.uint8)
 
-    # print("Dimensioni dopo downsampling:")
-    # print(histo_fragment_ur.shape)
-    # print(histo_fragment_lr.shape)
-    # print(histo_fragment_ll.shape)
-    # print(histo_fragment_ul.shape)
+    # Find image contours
 
-    ### Find image contours
-
-    ## Convert from RGB image to grayscale
+    # Convert from RGB image to grayscale
     # ATTENTIONE QUI HO CAMBIATO CODICE: ERA 256 PRIMA
     histo_fragment_gray_binary_ll = color.rgb2gray(histo_fragment_ll)
     histo_fragment_gray_ll = (histo_fragment_gray_binary_ll * 255).astype('uint8')
@@ -234,7 +229,6 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
     histo_fragment_gray_ul = (histo_fragment_gray_binary_ul * 255).astype('uint8')
     histo_fragment_gray_binary_ur = color.rgb2gray(histo_fragment_ur)
     histo_fragment_gray_ur = (histo_fragment_gray_binary_ur * 255).astype('uint8')
-
 
     if show_all_images:
         plt.imshow(histo_fragment_gray_ll, cmap="gray")
@@ -246,13 +240,13 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
         plt.imshow(histo_fragment_gray_ur, cmap="gray")
         plt.savefig(os.path.join(save_dir, 'upper_right', f'upper_right_gray_scale.png'))
 
-    ## Intensity histogram
+    # Intensity histogram
     hist_ul = ndi.histogram(histo_fragment_gray_ul, min=0, max=255, bins=256)
     hist_ur = ndi.histogram(histo_fragment_gray_ur, min=0, max=255, bins=256)
     hist_lr = ndi.histogram(histo_fragment_gray_lr, min=0, max=255, bins=256)
     hist_ll = ndi.histogram(histo_fragment_gray_ll, min=0, max=255, bins=256)
 
-    ## Image segmentation based on threshold
+    # Image segmentation based on threshold
     thresh = 220
     # thresholding based --> binary image is obtained
     image_thresholded_ul = histo_fragment_gray_ul < thresh
@@ -270,7 +264,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
         plt.imshow(image_thresholded_ll, cmap="gray")
         plt.savefig(os.path.join(save_dir, 'upper_right', f'lower_left_segmentation.png'))
 
-    ## Apply median filter to reduce the noise
+    # Apply median filter to reduce the noise
     median_filter_ur_x = 20
     median_filter_lr_x = 35
     median_filter_ll_x = 20
@@ -280,7 +274,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
     image_thresholded_filtered_ll = ndi.median_filter(image_thresholded_ll, size=int(median_filter_ll_x))
     image_thresholded_filtered_lr = ndi.median_filter(image_thresholded_lr, size=int(median_filter_lr_x))
 
-    ## Erode the image to eliminate holes
+    # Erode the image to eliminate holes
     closing_ur_x = 15
     closing_lr_x = 35
     closing_ll_x = 15
@@ -372,39 +366,8 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
 
         gc.collect()
 
-        ## Calculate histograms and distances between histograms
-        # set up functions to calculate colour histograms
-        square_size = 64
-        n_bins = 32
-
-
         # from here on it starts working on the real image
-
-        def calculate_histogram(image, mask, center, n_bins, size):
-            # function that computes the histograms for red green and blue channel of a certain region of the given
-            # image. The region position is given by the mask
-            x, y = center
-            Mx, My = mask.shape
-            x1, x2 = np.maximum(x - size // 2, 0), np.minimum(x + size // 2, Mx)
-            y1, y2 = np.maximum(y - size // 2, 0), np.minimum(y + size // 2, My)
-            mask = mask[x1:x2, y1:y2]
-            sub_image = image[x1:x2, y1:y2]
-            sub_image = sub_image.reshape([-1, 3])[mask.reshape([-1]) == 1]
-
-            # DEBUGGING
-            # plt.imshow(sub_image)
-            # plt.savefig('sub_image')
-            # plt.imshow(mask)
-            # plt.savefig('sub_mask')
-
-            r_hist = np.histogram(sub_image[:, 0], n_bins, range=[0, 256], density=True)[0]
-            g_hist = np.histogram(sub_image[:, 1], n_bins, range=[0, 256], density=True)[0]
-            b_hist = np.histogram(sub_image[:, 2], n_bins, range=[0, 256], density=True)[0]
-
-            out = np.concatenate([r_hist, g_hist, b_hist])
-            return out
-
-
+        # calculates the histograms for all the edges (ant and pos) of every fragment
         histograms = []
         print("Calculating histograms for all sections along the x and y edges...")
         for i in range(len(data_dict)):
@@ -427,6 +390,9 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             data_dict[i]['histograms_ant'] = hx
             data_dict[i]['histograms_pos'] = hy
 
+        # calculates the correlation distances between all combinations of ant and pos points
+        # e.g. distance between ant_points histogram of fragment 1 and pos_points histogram of fragment 2
+        # (they are matching edges!)
         print("Calculating correlation distances between histograms for every tissue section pair...")
         histogram_dists = {}
         for i, j in combinations(range(len(data_dict) + 1), 2):
@@ -440,131 +406,28 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
                     data_dict[i]['histograms_pos'], data_dict[j]['histograms_ant'],
                     metric="correlation")}
 
-        # ensuring that max distance == 1
+        # ensuring that max distance == 1, i.e. normalization by the maximum value of distance
         for i, j in histogram_dists:
             histogram_dists[i, j]['ant_pos'] = np.divide(
                 histogram_dists[i, j]['ant_pos'], histogram_dists[i, j]['ant_pos'].max())
             histogram_dists[i, j]['pos_ant'] = np.divide(
                 histogram_dists[i, j]['pos_ant'], histogram_dists[i, j]['pos_ant'].max())
 
-        ## Optimization of tissue segment translations and rotations via differential evolution
-
-        POPSIZE = 25  # parameter for the evolutionary optimization (population size)
-        MAXITER = 200  # parameter for the evolutionary optimization (population size)
-
-        from skimage.transform import AffineTransform
-
-        from scipy.optimize import NonlinearConstraint
-        from scipy import optimize
-
-        np.random.seed(42)
-
+        # Optimization of tissue segment translations and rotations via differential evolution
         output_size = max([max(x['image'].shape) for x in data_dict]) * 2
         output_size = [output_size, output_size]
         print('output_size', output_size)
 
-
-        def par_to_H(theta, tx, ty):
-            # converts a set of three parameters to
-            # a homography matrix
-            H = AffineTransform(
-                scale=1, rotation=theta, shear=None, translation=[tx, ty])
-            return H.params
-
-
-        def M_to_quadrant_dict(M, quadrants, anchor):
-            # function that generates the transformation matrices for each quadrant and returns a dict
-            H_dict = {}
-            Q = [q for q in quadrants if q != anchor]
-            for i, q in enumerate(Q):
-                H_dict[q] = par_to_H(*[M[i] for i in range(i * 3, i * 3 + 3)])
-            return H_dict
-
-
-        def warp(coords, H):
-            # function that does the transformation
-            out = cv2.perspectiveTransform(
-                np.float32(coords[:, np.newaxis, :]), H)[:, 0, :]
-            return out
-
-
         print("Optimizing tissue mosaic...")
 
-
-        def loss_fn(M, quadrants, anchor, data_dict, histogram_dists, max_size, alpha=0.1, d=32):
-            # M is a list of parameters for homography matrices (every three parameters is
-            # converted into a homography matrix). For convenience, I maintain the upper-left
-            # quadrant as the fixed image
-            # alpha is a scaling factor for the misalignment loss
-            hist_loss = 0.
-            mis_loss = 0.
-
-            # H_dict contains as a dictionary the transformation matrices for each quadrant excluding the anchor
-            H_dict = M_to_quadrant_dict(M, quadrants, anchor)
-
-            for idx in range(len(data_dict)):
-                # for each quadrant retrieves tha parameters
-                # for each pair of fragment (quadrant) with indces i and j
-                i, j = idx, (idx + 1) % len(data_dict)
-
-                data1 = data_dict[i]
-                data2 = data_dict[j]
-                q1 = data1['quadrant']
-                q2 = data2['quadrant']
-
-                axis1 = data1['pos_line']
-                axis2 = data2['ant_line']
-                points1 = data1['pos_points']
-                points2 = data2['ant_points']
-                hist_dist = histogram_dists[i, j]["pos_ant"]
-
-                # if index q1 quadrant is not the anchor retrieve the transformed edges of the fragment and the
-                # transformed points coordinates
-                if q1 in H_dict and q1 != anchor:
-                    axis1 = warp(axis1, H_dict[q1])
-                    points1 = warp(points1, H_dict[q1])
-                if q2 in H_dict and q2 != anchor:
-                    axis2 = warp(axis2, H_dict[q2])
-                    points2 = warp(points2, H_dict[q2])
-
-                # term of the final loss function related to the misalignment
-                mis_loss += np.mean((axis1 / max_size - axis2 / max_size) ** 2)
-
-                # samples some indices (1/4 of the total number of points) on the two fragment edges
-                # (note that points1 are the 'pos_points' on fragment1 and points2 are the 'ant_points' on fragment2,
-                # so they are the points that should match during the stitching)
-                ss1 = np.random.choice(len(points1),
-                                       size=len(points1) // 4,
-                                       replace=False)
-                ss2 = np.random.choice(len(points2),
-                                       size=len(points2) // 4,
-                                       replace=False)
-                point_distance = cdist(points1[ss1], points2[ss2])
-                nx, ny = np.where(point_distance < d)
-                nx, ny = ss1[nx], ss2[ny]
-                hnb = hist_dist[nx, ny]
-                if hnb.size > 0:
-                    h = np.mean(hnb)
-                else:
-                    h = 0.
-                # penalty if points have no nearby pixels
-                max_dist = hist_dist.max()
-                no_nearby_x = point_distance.shape[0] - np.unique(nx).size
-                no_nearby_x = no_nearby_x / point_distance.shape[0]
-                no_nearby_y = point_distance.shape[1] - np.unique(ny).size
-                no_nearby_y = no_nearby_y / point_distance.shape[1]
-                hist_loss += h + (no_nearby_x + no_nearby_y) * max_dist
-
-            # print("mis_loss: ", mis_loss)
-            # print("hist_loss: ", hist_loss)
-            loss = (mis_loss) * alpha + (1 - alpha) * hist_loss
-            return loss
-
-
+        # list to keep track of the fragment position
         quadrant_list = list(range(len(data_dict)))
+        # defining the anchor fragment (the one that does not move)
         anchor = len(data_dict) - 1  # the last (UL) quadrant is used as an anchor
-        bounds = []
+
         # initialize image positions to the edges where they *should* be
+        # defines buonds and x0, parameters to be passed to the optimizer
+        bounds = []
         x0 = []
         a, b, _ = [x['image'] for x in data_dict if x['quadrant'] == anchor][0].shape
         for q in quadrant_list:
@@ -579,78 +442,14 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
         # Tracking progress
         progress = []
 
-        # Al momento non utilizzata, ma se ne può parlare
-        def reconstruct_mosaic(H_dict, anchor, data_dict):
-            # Create an empty canvas large enough to hold the stitched image
-            canvas_height = output_size[0] * 2
-            canvas_width = output_size[1] * 2
-            canvas = np.zeros((canvas_height, canvas_width, 3), dtype=np.uint8)
-
-            # Loop over all the quadrants
-            for idx, data in enumerate(data_dict):
-                img = data['image']
-                quadrant = data['quadrant']
-
-                # Debug: Print current homography matrix
-                print(f"Quadrant: {quadrant}")
-                if quadrant in H_dict:
-                    print(f"Homography matrix for quadrant {quadrant}:")
-                    print(H_dict[quadrant])
-
-                    # Apply homography if it's not the anchor
-                    H = np.array(H_dict[quadrant], dtype=np.float32)  # Ensure it's np.float32
-                    try:
-                        warped_img = cv2.warpPerspective(img, H, (canvas_width, canvas_height))
-                    except cv2.error as e:
-                        print(f"Error warping quadrant {quadrant}: {e}")
-                        continue
-                else:
-                    # Anchor image doesn't get transformed
-                    warped_img = img
-
-                # Calculate the new position of the warped image based on the homography matrix
-                h, w = img.shape[:2]
-                pts = np.array([[0, 0], [0, h], [w, h], [w, 0]], dtype="float32").reshape(-1, 1, 2)
-                dst = cv2.perspectiveTransform(pts, H) if quadrant in H_dict else pts
-
-                # Get the bounding box of the transformed points
-                x_min, y_min = np.int32(dst.min(axis=0).ravel())
-                x_max, y_max = np.int32(dst.max(axis=0).ravel())
-
-                # Adjust the bounding box to fit the canvas
-                x_min = max(0, x_min)
-                y_min = max(0, y_min)
-                x_max = min(canvas_width, x_max)
-                y_max = min(canvas_height, y_max)
-
-                # Place the warped image onto the canvas
-                canvas[y_min:y_max, x_min:x_max] = warped_img[:(y_max - y_min), :(x_max - x_min)]
-
-            return canvas
-
-        # Gran parte della funzione non usata, ma se ne può parlare
         def cb(xk, convergence):
-            # Compute the loss as before
+            # Non ho ben capito come funziona questo callback
+            # Computes the loss and keeps track
             loss_value = loss_fn(xk, quadrant_list, anchor, data_dict, histogram_dists, output_size[0] / 100, 0.1,
                                  square_size // 2)
             progress.append(loss_value)
 
-            # Generate the homography dictionary from the current parameters
-            # H_dict = M_to_quadrant_dict(xk, quadrant_list, anchor)
-
-            # Reconstruct the mosaic with current transformations
-            # mosaic = reconstruct_mosaic(H_dict, anchor, data_dict)
-
-            # Save the mosaic image for this iteration
-            # iteration_num = len(progress)
-            # mosaic_filename = os.path.join(root_folder, 'debug', f'mosaic_iter_{iteration_num}.png')
-            # cv2.imwrite(mosaic_filename, mosaic)
-
-            # Optionally display the mosaic image (can slow down the optimization if the display is too frequent)
-            # plt.imshow(cv2.cvtColor(mosaic, cv2.COLOR_BGR2RGB))
-            # plt.title(f'Iteration {iteration_num} - Loss: {loss_value}')
-            # plt.show()
-
+        # OPTIMIZATION IS HERE
         de_result = optimize.differential_evolution(
             loss_fn, bounds, popsize=POPSIZE, maxiter=MAXITER, disp=True, x0=x0,
             mutation=[0.2, 1.0], seed=42, callback=cb,
@@ -671,19 +470,22 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
 
         # Save plot
         plt.savefig(os.path.join(save_dir, 'Andamento_loss.png'))
-        # plt.show()
 
+        # starts to reconstruct the final image based on the optimization
         output_size = max([max(x.shape) for x in images_original]) * 2
         # output_size = max([max(x.shape) for x in images_original])
         output_size = [output_size, output_size]
         output = np.zeros((*output_size, 3), dtype=np.int32)
         output_d = np.zeros((*output_size, 3), dtype=np.int32)
 
+        # sets a scaling array to be multiplied to the transformation matrix to account for original downsampling
         sc = np.array(
             [[1, 1, DOWNSAMPLE_LEVEL], [1, 1, DOWNSAMPLE_LEVEL], [0, 0, 1]])
 
         axis_1_final = []
         axis_2_final = []
+
+        # creates the dict containing the final transformation matrices for all the fragments
         H_dict = M_to_quadrant_dict(
             de_result.x, quadrant_list, anchor)
 
@@ -692,12 +494,15 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             sh = image.shape
             mask = resize(data['tissue_mask'], [sh[0], sh[1]], order=0)
             q = data['quadrant']
-            if q in H_dict:
-                print(q)
+
+            if q in H_dict:  # if the current quadrant is not the anchor
+                # applies the scaled transformation (accounting for downsampling) to the filtered fragment
+                # (no background)
                 im = cv2.warpPerspective(
                     np.uint8(image * mask[:, :, np.newaxis]),
                     sc * H_dict[q], output_size)
 
+                # applies the transformation to the lines (ant and pos) through the warp custom function
                 axis_1_q = data['pos_line']
                 axis_1_q = warp(axis_1_q, H_dict[q])
                 print("AXIS1", axis_1_q)
@@ -709,11 +514,15 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
 
                 del axis_1_q  # Libera memoria
                 del axis_2_q  # Libera memoria
-            else:
-                print(q)
+            else:  # if it is the anchor
+                print('Anchor fragment number: ', q)
+
+                # applies the identity transformation to the filtered fragment
                 im = cv2.warpPerspective(
                     np.uint8(image * mask[:, :, np.newaxis]),
                     par_to_H(0, 0, 0), output_size)
+
+                # applies the identity transformation to the lines
                 axis_1_anchor = data['pos_line']
                 axis_1_anchor = warp(axis_1_anchor, par_to_H(0, 0, 0))
                 print("AXIS1_anchor", axis_1_anchor)
@@ -779,7 +588,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
         # plt.savefig(os.path.join(root_folder, 'debug', 'pre_output1_0_255_custom.png'))
         plt.imsave(os.path.join(save_dir, 'pre_output1_0_255_custom.png'), output.astype('uint8'))
 
-        print(output_d.shape)
+        # print(output_d.shape)
         # if output_d > 1 --> output/output_d
         # else: output_d <= 1 --> output
         # Ma siccome output_d è un'immagine nera, output rimane uguale! NO, c'è qualcosa che mi sfugge
