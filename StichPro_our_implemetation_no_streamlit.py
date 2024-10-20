@@ -68,7 +68,7 @@ parser.add_argument(
 args = parser.parse_args()
 
 dataset_folder_command_line = args.input_path
-dataset_folder_Davide = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/artificial/"
+dataset_folder_Davide = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/Dataset_00"
 dataset_folder_Paolo = r"C:\Users\dicia\NL2_project\datasets\test-data-corretto"
 dataset_folder_Kaggle = "/kaggle/input"
 
@@ -110,10 +110,12 @@ except FileNotFoundError as e:
     sys.exit(1)  # Esce con un codice di errore
 
 # Ottengo il nome del dataset, cosi da poter successivamente creare una sottocartella in debug con lo stesso nome
-folder_name = os.path.basename(dataset_folder)
+folder_name = os.path.basename(os.path.normpath(dataset_folder))
 
 # create folder for debugging
 save_dir = os.path.join(root_folder, 'debug', folder_name)
+
+print("Cartella di salvataggio: ", save_dir)
 
 try:
     os.makedirs(save_dir, exist_ok=True)
