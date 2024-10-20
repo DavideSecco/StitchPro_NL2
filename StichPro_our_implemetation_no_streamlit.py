@@ -117,6 +117,12 @@ save_dir = os.path.join(root_folder, 'debug', folder_name)
 
 print("Cartella di salvataggio: ", save_dir)
 
+# Se la cartella di debug del dataset esiste già, non rifaccio il lavoro
+if os.path.exists(save_dir):
+    print(f"\nLa cartella '{save_dir}' esiste già, non rifaccio l'ottimizzazione.")
+    print("Se si vuole rifare l'ottimizzazione, cancellare la cartella")
+    sys.exit(0)
+
 try:
     os.makedirs(save_dir, exist_ok=True)
     print(f"Cartella '{save_dir}' creata con successo")
