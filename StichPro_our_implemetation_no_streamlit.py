@@ -38,10 +38,6 @@ from scipy.optimize import NonlinearConstraint
 from scipy import optimize
 import matplotlib.pyplot as plt
 
-import gc
-
-gc.collect()
-
 # IMPORT OUR CLASSES
 from utilities import Preprocessing, Line, Image_Lines, saving_functions
 from utilities.optimization_function import *
@@ -111,7 +107,7 @@ except FileNotFoundError as e:
 folder_name = os.path.basename(os.path.normpath(dataset_folder))
 
 # create folder for debugging
-save_dir = os.path.join(root_folder, 'debug', folder_name)
+save_dir = os.path.join(root_folder, 'debug_custom', folder_name)
 
 print("Cartella di salvataggio: ", save_dir)
 
@@ -176,7 +172,6 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
         histo_fragment_ur = cv2.rotate(histo_fragment_ur, cv2.ROTATE_180)
     if int(angle_choice_ur) == 0:
         histo_fragment_ur = histo_fragment_ur
-
     angle_choice_lr = 0
     if int(angle_choice_lr) == 90:
         histo_fragment_lr = cv2.rotate(histo_fragment_lr, cv2.ROTATE_90_CLOCKWISE)
@@ -368,9 +363,9 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             # saves important information of data_dict (debugging)
             saving_functions.save_images_data_dict(data_dict, i, save_dir_image_i)
 
-        ############### FINE NOSTRA IMPLEMENTAZIONE #################################
-
-        gc.collect()
+        ###################################################
+        ################ Seconda parte ####################
+        ###################################################
 
         # from here on it starts working on the real image
         # calculates the histograms for all the edges (ant and pos) of every fragment
@@ -563,8 +558,6 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
         plt.savefig(os.path.join(save_dir, 'output_d_colormap_fixed.png'))
         # plt.close()
 
-        print("Ho finito il ciclo")
-
         euclidean_distance_0_1_center = np.sqrt(
             (axis_2_final[1][0][0] - axis_1_final[0][0][0]) ** 2 + (axis_2_final[1][0][1] - axis_1_final[0][0][1]) ** 2)
         euclidean_distance_0_1_out = np.sqrt(
@@ -638,6 +631,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
             "dataset": folder_name,
             "success": de_result.success,  # Esito dell'ottimizzazione
             "fun": de_result.fun,  # Valore della funzione obiettivo
+            "average_euclidean_distance_mm" : average_euclidean_distance_mm,
             "work_time": work_time  # Tempo di esecuzione
         }
 
