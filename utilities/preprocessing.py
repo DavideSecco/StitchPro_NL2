@@ -49,7 +49,7 @@ class Preprocessing:
         for channel in range(0, pre_padding.shape[2]):
             padded_image[:, :, channel] = np.pad(pre_padding[:, :, channel],
                                                  pad_width=pad_width,
-                                                 **kwargs).astype(dtype)
+                                                 mode='constant', constant_values=255).astype(dtype)
 
         self.processed_image = padded_image
 
@@ -137,7 +137,7 @@ class Preprocessing:
         if rescale_img:
             self.rescale_img(scaling_factor=scaling_factor, show=show_steps)
         if apply_padding:
-            self.pad_image(show=show_steps, mode='edge')
+            self.pad_image(show=show_steps)
         if apply_grayscale:
             self.grayscale_transform(show=show_steps)
         if apply_threshold:
