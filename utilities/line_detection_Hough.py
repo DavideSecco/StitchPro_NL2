@@ -156,7 +156,7 @@ class Image_Lines():
         # Il paramentro di thickness è fondamentale: capire quale sis il valore migliore è la chiave:
         # Per partire: (img.shape[0]+img.shape[1])/2 * 1/25
         # Media delle dimensioni dell'immagine e poi divisa per 25
-        thickness = int((self.image.shape[0] + self.image.shape[1]) / 2 * (1 / 25))
+        thickness = int((self.image.shape[0] + self.image.shape[1]) / 2 * (1 / 15))
         # print("thickness", thickness)
         cv.line(aux_mask, self.lines[index].extreme_points[0], self.lines[index].extreme_points[1], 1, thickness=thickness)
 
@@ -441,7 +441,7 @@ def main():
         "-o", "--orientation",
         type=str,
         choices=["ur", "ul", "dr", "dl"],  # Posizioni accettate
-        required=True,
+        required=False,
         help="Posizione del frammento (ur=up-right, ul=up-left, dr=down-right, dl=down-left)."
     )
 
