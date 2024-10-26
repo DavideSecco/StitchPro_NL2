@@ -28,7 +28,7 @@ def salva_in_csv(dizionario, path, nome_file_csv):
     percorso_completo = os.path.join(path, nome_file_csv)
 
     # Prepara i dati da scrivere nella riga
-    riga = [dizionario['dataset'], dizionario['success'], dizionario['fun'], dizionario['work_time']]
+    riga = [dizionario['dataset'], dizionario['success'], dizionario['fun'], dizionario['average_euclidean_distance_mm'], dizionario['work_time']]
 
     # Leggi le righe esistenti se il file esiste
     righe = []
@@ -42,7 +42,7 @@ def salva_in_csv(dizionario, path, nome_file_csv):
 
         # Se il file è vuoto o non esiste, scrivi l'intestazione
         if not righe:
-            writer.writerow(['Descrizione', 'Success', 'Fun', 'Work Time'])
+            writer.writerow(['Descrizione', 'Success', 'Fun', 'average euclidean distance mm',  'Work Time'])
 
         # Scrivi le righe precedenti
         writer.writerows(righe)
