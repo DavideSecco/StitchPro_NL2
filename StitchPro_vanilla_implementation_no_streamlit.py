@@ -31,8 +31,13 @@ from tiatoolbox.wsicore import WSIReader
 import time
 import json
 import sys
+from pathlib import Path
 
 import matplotlib.pyplot as plt # DEBUGGING
+
+# IMPORT OUR CLASSES
+from utilities import Preprocessing, Line, Image_Lines, saving_functions
+from utilities.optimization_function import *
 
 # IMPORT OUR CLASSES
 from utilities import Preprocessing, Line, Image_Lines
@@ -798,6 +803,17 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
 
                 x0.extend([0, a, b])
 
+        # Tracking progress
+        progress = []
+
+        def cb(xk, convergence):
+            # Non ho ben capito come funziona questo callback
+            # Computes the loss and keeps track
+            loss_value = loss_fn(xk, quadrant_list, anchor, data_dict, histogram_dists, output_size[0] / 100,
+                                 0.1,
+                                 square_size // 2)
+            progress.append(loss_value)
+
         de_result = optimize.differential_evolution(
             loss_fn, bounds, popsize=POPSIZE, maxiter=MAXITER, disp=True, x0=x0,
             mutation=[0.2, 1.0], seed=42,
@@ -912,8 +928,8 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
         output = np.where(output_d > 1, output / output_d, output)
         # output[np.sum(output, axis = -1) > 650] = 0
         output = output.astype(np.uint8)
+        plt.imsave(os.path.join(save_dir, 'pre_output3_npuint8.png'), output)
 
-        st.sidebar.image(output, caption="Stitching output", use_column_width=True)
         #imageio.imwrite("/Users/anacastroverde/Desktop/output_black.tif", output, format="tif")
 
         reader = WSIReader.open(output)
