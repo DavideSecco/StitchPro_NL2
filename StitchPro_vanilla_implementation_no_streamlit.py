@@ -61,8 +61,18 @@ parser.add_argument(
     help="Percorso opzionale per le immagini"
 )
 
+parser.add_argument(
+    '--save_dir',
+    type=str,
+    default=None,  # Se non viene fornito dall'utente, rimane None
+    help="Percorso dove salvare i risultati",
+    required=True
+)
+
 # Parsing degli argomenti
 args = parser.parse_args()
+
+save_dir = args.save_dir
 
 dataset_folder_command_line = args.input_path
 dataset_folder_Davide = "/mnt/Volume/Mega/LaureaMagistrale/CorsiSemestre/A2S1/MultudisciplinaryProject/data/Dataset_00"
@@ -108,7 +118,7 @@ except FileNotFoundError as e:
 folder_name = os.path.basename(os.path.normpath(dataset_folder))
 
 # create folder for debugging
-save_dir = os.path.join(root_folder, 'debug_vanilla', folder_name)
+save_dir = os.path.join(save_dir, folder_name)
 
 print("Cartella di salvataggio: ", save_dir)
 
