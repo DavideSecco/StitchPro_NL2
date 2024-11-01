@@ -553,10 +553,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
                 output_d[im[:, :, :] > 0] += 1
 
         # DEBUGGING
-        # plt.figure()
-        # plt.imshow(output)
-        # plt.savefig(os.path.join(root_folder, 'debug', 'pre_output0_custom.png'))
-        plt.imsave(os.path.join(save_dir, 'pre_output0_custom.png'), output.astype('uint8'))
+        # plt.imsave(os.path.join(save_dir, 'pre_output0_custom.png'), output.astype('uint8'))
 
         # Converti output_d in un'immagine a singolo canale sommando lungo l'asse del colore (RGB)
         output_d_single_channel = np.sum(output_d, axis=2)
@@ -592,10 +589,7 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
 
         # Cambio sfondo da nero a bianco
         output[output == 0] = 255
-        # plt.figure()
-        # plt.imshow(output)
-        # plt.savefig(os.path.join(root_folder, 'debug', 'pre_output1_0_255_custom.png'))
-        plt.imsave(os.path.join(save_dir, 'pre_output1_0_255_custom.png'), output.astype('uint8'))
+        # plt.imsave(os.path.join(save_dir, 'pre_output1_0_255_custom.png'), output.astype('uint8'))
 
         # print(output_d.shape)
         # if output_d > 1 --> output/output_d
@@ -604,11 +598,11 @@ if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_fi
         output = np.where(output_d > 1, output / output_d, output)
         # plt.figure()
         # plt.imshow(output)
-        plt.savefig(os.path.join(save_dir, 'pre_output2_after_output-output_d.png'))
+        # plt.savefig(os.path.join(save_dir, 'pre_output2_after_output-output_d.png'))
 
         # output[np.sum(output, axis = -1) > 650] = 0
         output = output.astype(np.uint8)
-        plt.imsave(os.path.join(save_dir, 'pre_output3_npuint8.png'), output)
+        # plt.imsave(os.path.join(save_dir, 'pre_output3_npuint8.png'), output)
 
         # imageio.imwrite("/Users/anacastroverde/Desktop/output_black.tif", output, format="tif")
 
