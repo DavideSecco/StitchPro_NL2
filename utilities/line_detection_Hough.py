@@ -8,6 +8,10 @@ from skimage.transform import hough_line, hough_line_peaks
 import math
 from utilities import Preprocessing
 
+# Definisci un'eccezione personalizzata
+class NessunaLineaOrtogonaleError(Exception):
+    '''Eccezione sollevata quando non si trovano linee ortogonali.'''
+    pass
 
 class Line():
     """
@@ -229,8 +233,8 @@ class Image_Lines():
             else:
                 print(f"La linea {sorted_results[0][0]} e la linea {index} NON sono ortogonali")
 
-        # Invece di ritornare questo, andrebbe ritornato un messaggio di errore nel caso non si trovi nulla
-        return sorted_results[0][0], sorted_results[1][0]
+        # Solleva un'eccezione se non si trovano linee ortogonali
+        raise NessunaLineaOrtogonaleError("Nessuna coppia di linee ortogonali trovata")
 
     def find_intersection(self, first, second):
         """

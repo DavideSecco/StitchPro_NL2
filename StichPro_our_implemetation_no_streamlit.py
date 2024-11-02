@@ -355,7 +355,26 @@ if True:
             ######################### INIZIO NOSTRA IMPLEMENTAZIONE ############################################
 
             # print("Tipi immagine: ", type(images[i][2, 3]), type(tissue_masks_closed[i][2, 3]))
-            image_lines = Image_Lines(images[i], tissue_masks_closed[i], save_dir_image_i)
+            try:
+                image_lines = Image_Lines(images[i], tissue_masks_closed[i], save_dir_image_i)
+            except Exception as e:
+                print(e)
+
+                # Crea un dizionario con i risultati
+                result_data = {
+                    "dataset": folder_name,
+                    "success": 'False - Not found perp lines',  # Esito dell'ottimizzazione
+                    "fun": 'undefined',  # Valore della funzione obiettivo
+                    "average_euclidean_distance_mm": 'undefined',
+                    "work_time": 'undefined'  # Tempo di esecuzione
+                }
+
+                saving_functions.salva_in_csv(result_data, Path(save_dir).parent, "results_custom.csv")
+
+                saving_functions.salva_in_json(result_data, save_dir, "results_custom.json")
+
+                sys.exit(1)
+
             image_lines.plot_results()
             ant_line = np.array([image_lines.intersection, image_lines.end_ant_point])
             pos_line = np.array([image_lines.intersection, image_lines.end_pos_point])
@@ -645,12 +664,7 @@ if True:
 
         saving_functions.salva_in_csv(result_data, Path(save_dir).parent, "results_custom.csv")
 
-        # Percorso completo del file
-        save_path_result = os.path.join(save_dir, "results_custom.json")
-
-        # Salva i risultati in un file JSON nella directory specificata
-        with open(save_path_result, "w") as json_file:
-            json.dump(result_data, json_file, indent=4)
+        saving_functions.salva_in_json(result_data, save_dir, "results_custom.json")
 
         print(result_data)
         # print('Total execution time of algorithm:', round(elapsed_time, 2), 'seconds')

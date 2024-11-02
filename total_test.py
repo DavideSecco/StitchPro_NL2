@@ -68,4 +68,7 @@ for folder in sorted(os.listdir(datasets_directory)):
         ]
 
     # Esecuzione del comando
-    subprocess.run(command, check=True)
+    result = subprocess.run(command)
+
+    # if result.returncode == 1:
+    #    continue
