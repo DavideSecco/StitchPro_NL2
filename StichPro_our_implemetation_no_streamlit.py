@@ -37,9 +37,10 @@ from skimage.transform import AffineTransform
 from scipy.optimize import NonlinearConstraint
 from scipy import optimize
 import matplotlib.pyplot as plt
+import tifffile as tiff
 
 # IMPORT OUR CLASSES
-from utilities import Preprocessing, Line, Image_Lines, saving_functions
+from utilities import Preprocessing, Line, Image_Lines, saving_functions, cutter
 from utilities.optimization_function import *
 
 # Names
@@ -91,22 +92,35 @@ print(f"Percorso del dataset che analizzo: {dataset_folder}")
 
 # Controllo che i file dei frammenti esistano all'interno della cartella
 try:
-    # Percorsi dei file
-    img_file_buffer_ur = os.path.join(dataset_folder, 'upper_right.tif')
-    img_file_buffer_lr = os.path.join(dataset_folder, 'bottom_right.tif')
-    img_file_buffer_ll = os.path.join(dataset_folder, 'bottom_left.tif')
-    img_file_buffer_ul = os.path.join(dataset_folder, 'upper_left.tif')
+    # Controlla se la cartella contiene solo un file .tif
+    tif_files = [f for f in os.listdir(dataset_folder) if f.endswith('.tif')]
+    if len(tif_files) == 1:
+        single_file_path = os.path.join(dataset_folder, tif_files[0])
+        print("Passata cartella con un singolo file .tif")
+        histo_fragment_ur, histo_fragment_lr, histo_fragment_ll, histo_fragment_ul = cutter.cut_image(tiff.imread(single_file_path))
+    else:
+        # Percorsi dei file
+        img_file_buffer_ur = os.path.join(dataset_folder, 'upper_right.tif')
+        img_file_buffer_lr = os.path.join(dataset_folder, 'bottom_right.tif')
+        img_file_buffer_ll = os.path.join(dataset_folder, 'bottom_left.tif')
+        img_file_buffer_ul = os.path.join(dataset_folder, 'upper_left.tif')
 
-    # Lista dei file da controllare
-    required_files = [img_file_buffer_ur, img_file_buffer_lr, img_file_buffer_ll, img_file_buffer_ul]
+        # Lista dei file da controllare
+        required_files = [img_file_buffer_ur, img_file_buffer_lr, img_file_buffer_ll, img_file_buffer_ul]
 
-    # Controlla se ogni file esiste
-    for file_path in required_files:
-        if not os.path.exists(file_path):
-            # Solleva un'eccezione in caso di file mancante
-            raise FileNotFoundError(f"Il file {file_path} non esiste nella cartella {dataset_folder}.")
+        # Verifica che i file richiesti esistano
+        for file_path in required_files:
+            if not os.path.exists(file_path):
+                raise FileNotFoundError(f"Il file {file_path} non esiste nella cartella {dataset_folder}.")
 
-    print(f"Tutti i file richiesti esistono nella cartella {dataset_folder}.")
+        # Read the images with name histo_fragment_[pos]
+        histo_fragment_ur = imageio.imread(img_file_buffer_ur)
+        histo_fragment_lr = imageio.imread(img_file_buffer_lr)
+        histo_fragment_ll = imageio.imread(img_file_buffer_ll)
+        histo_fragment_ul = imageio.imread(img_file_buffer_ul)
+
+        print(f"Tutti i file richiesti esistono nella cartella {dataset_folder}.")
+
 
 except FileNotFoundError as e:
     # Gestisce l'eccezione, stampa l'errore e termina il programma
@@ -158,19 +172,9 @@ np.random.seed(42)
 # App description
 start_time = time.time()
 
-
-if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_file_buffer_ll is not None) & (
-        img_file_buffer_ul is not None):
-
-    # Read the images with name histo_fragment_[pos]
-    histo_fragment_ur = imageio.imread(img_file_buffer_ur)
-
-    histo_fragment_lr = imageio.imread(img_file_buffer_lr)
-
-    histo_fragment_ll = imageio.imread(img_file_buffer_ll)
-
-    histo_fragment_ul = imageio.imread(img_file_buffer_ul)
-
+# Dovuto cambiare condizione per aggiungere la possibilità di tagliare le'immagine in input
+# if (img_file_buffer_ur is not None) & (img_file_buffer_lr is not None) & (img_file_buffer_ll is not None) & (img_file_buffer_ul is not None):
+if True:
     # Rotate images if user use the option
     angle_options = [-90, 0, 90, 180]
     angle_choice_ur = 0
