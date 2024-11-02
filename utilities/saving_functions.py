@@ -50,6 +50,14 @@ def salva_in_csv(dizionario, path, nome_file_csv):
         # Aggiungi la nuova riga
         writer.writerow(riga)
 
+def salva_in_json(dizionario, path, nome_file_json):
+    # Percorso completo del file
+    save_path_result = os.path.join(path, nome_file_json)
+
+    # Salva i risultati in un file JSON nella directory specificata
+    with open(save_path_result, "w") as json_file:
+        json.dump(dizionario, json_file, indent=4)
+
 
 def save_images_data_dict(data_dict, i, save_dir_image_i):
     """
