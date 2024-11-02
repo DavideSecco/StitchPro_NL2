@@ -976,12 +976,7 @@ if True:
 
         saving_functions.salva_in_csv(result_data, Path(save_dir).parent, "results_vanilla.csv")
 
-        # Percorso completo del file
-        save_path_result = os.path.join(save_dir, "results_vanilla.json")
-
-        # Salva i risultati in un file JSON nella directory specificata
-        with open(save_path_result, "w") as json_file:
-            json.dump(result_data, json_file, indent=4)
+        saving_functions.salva_in_json(result_data, save_dir, "results_vanilla.json")
 
         print(result_data)
         # print('Total execution time of algorithm:', round(elapsed_time, 2), 'seconds')
