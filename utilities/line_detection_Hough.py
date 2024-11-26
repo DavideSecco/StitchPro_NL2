@@ -49,6 +49,7 @@ class Line():
         self.slope = np.inf if np.isclose(angle, 0, atol=1e-3) else np.tan(angle + (np.pi / 2))
 
         self.cordinate_points = self.extract_line_pixels(img_width=image.shape[1], img_height=image.shape[0])
+        # print(self.cordinate_points[-20:])
         self.extreme_points = [self.cordinate_points[0], self.cordinate_points[-1]]
 
     def extract_line_pixels(self, img_width, img_height):
@@ -126,6 +127,8 @@ class Image_Lines():
         # self.indexes_vert_horiz_lines = self.filter_horizontal_vertical_lines()
 
         first, second = self.best_line_combination()
+        print("first line:", first)
+        print("second line:", second)
 
         self.ant_points = self.extract_points_on_border(first)[2]
         self.pos_points = self.extract_points_on_border(second)[2]
@@ -134,6 +137,9 @@ class Image_Lines():
         # Inverti! end_ant_point va con pos_line e end_pos_points va con ant_line
         # Questo non è il metodo migliore per trovare la fine dei lati, ma è il più pratico
         self.end_pos_point, self.end_ant_point = self.farthest_point(self.ant_points), self.farthest_point(self.pos_points)
+        # self.end_pos_point, self.end_ant_point =
+        self.end_pos_point, self.end_ant_point = self.farthest_middle_point(self.ant_points, first), self.farthest_middle_point(self.pos_points, second)
+        # print("New proposal", n1, n2)
         # DEBUGGING
         print("end_points: ", self.end_ant_point, self.end_pos_point)
         # self.plot_results()
@@ -194,9 +200,9 @@ class Image_Lines():
             # x0, y0, slope, angle = line
             # Controllo per le linee verticali (|θ| ≈ π/2) e orizzontali (θ ≈ 0)
             print("line", index, "angle", self.lines[index].angle)
-            if (abs(self.lines[index].angle) < np.pi / 20 or
-                abs(self.lines[index].angle - np.pi / 2) < np.pi / 20 or
-                abs(self.lines[index].angle + np.pi / 2) < np.pi / 20):
+            if (abs(self.lines[index].angle) < np.pi / 10 or
+                abs(self.lines[index].angle - np.pi / 2) < np.pi / 10 or
+                abs(self.lines[index].angle + np.pi / 2) < np.pi / 10):
                 # Aggiunge una condizione per controllare se la linea è nell'area in basso a sinistra
                 # if x0 < self.image.shape[1] / 2 and y0 < self.image.shape[0] / 2:
                 filtered_lines_index.append(index)
@@ -285,6 +291,47 @@ class Image_Lines():
                 farthest = point
 
         return farthest
+
+    import numpy as np
+
+    def farthest_middle_point(self, points_array, index):
+        """
+        Projects a non-straight line's points onto a straight line and finds the farthest point
+        from self.intersection.
+
+        :param points_array: Array of points (non-straight line) to project.
+        :param index: Index of the straight line in self.lines.
+        :return: The point in points_array farthest from self.intersection after projection.
+        """
+        # Straight line endpoints
+        straight_line = self.lines[index].cordinate_points
+        p1, p2 = np.array(straight_line[0]), np.array(straight_line[-1])
+
+        # Intersection point
+        intersection = np.array(self.intersection)
+
+        # Function to project a point onto a line segment
+        def project_point_on_line(point, p1, p2):
+            line_vector = p2 - p1
+            point_vector = point - p1
+            line_length_squared = np.dot(line_vector, line_vector)
+            if line_length_squared == 0:  # Line is just a point
+                return p1
+            projection_factor = np.dot(point_vector, line_vector) / line_length_squared
+            projection_factor = np.clip(projection_factor, 0, 1)  # Clamp to segment bounds
+            return p1 + projection_factor * line_vector
+
+        # Project all points onto the straight line
+        projected_points = np.array([project_point_on_line(pt, p1, p2) for pt in points_array])
+
+        # Calculate distances from the projected points to the intersection
+        distances = np.linalg.norm(projected_points - intersection, axis=1)
+
+        # Find the index of the farthest point
+        farthest_index = np.argmax(distances)
+
+        # Return the corresponding point in the original points_array
+        return points_array[farthest_index]
 
     def plot_results(self):
         fig, axes = plt.subplots(2, 2, figsize=(15, 6))
