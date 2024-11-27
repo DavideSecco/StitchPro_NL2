@@ -139,6 +139,7 @@ class Image_Lines():
         self.end_pos_point, self.end_ant_point = self.farthest_point(self.ant_points), self.farthest_point(self.pos_points)
         # self.end_pos_point, self.end_ant_point =
         self.end_pos_point, self.end_ant_point = self.farthest_middle_point(self.ant_points, first), self.farthest_middle_point(self.pos_points, second)
+        # self.end_pos_point, self.end_ant_point = self.farthest_point_2(self.lines[second]), self.farthest_point_2(self.lines[first])
         # print("New proposal", n1, n2)
         # DEBUGGING
         print("end_points: ", self.end_ant_point, self.end_pos_point)
@@ -200,9 +201,9 @@ class Image_Lines():
             # x0, y0, slope, angle = line
             # Controllo per le linee verticali (|θ| ≈ π/2) e orizzontali (θ ≈ 0)
             print("line", index, "angle", self.lines[index].angle)
-            if (abs(self.lines[index].angle) < np.pi / 10 or
-                abs(self.lines[index].angle - np.pi / 2) < np.pi / 10 or
-                abs(self.lines[index].angle + np.pi / 2) < np.pi / 10):
+            if (abs(self.lines[index].angle) < np.pi / 20 or
+                abs(self.lines[index].angle - np.pi / 2) < np.pi / 20 or
+                abs(self.lines[index].angle + np.pi / 2) < np.pi / 20):
                 # Aggiunge una condizione per controllare se la linea è nell'area in basso a sinistra
                 # if x0 < self.image.shape[1] / 2 and y0 < self.image.shape[0] / 2:
                 filtered_lines_index.append(index)
@@ -292,16 +293,15 @@ class Image_Lines():
 
         return farthest
 
-    import numpy as np
-
     def farthest_middle_point(self, points_array, index):
         """
-        Projects a non-straight line's points onto a straight line and finds the farthest point
-        from self.intersection.
+        Finds the farthest point from self.intersection among the closest points
+        on the straight line to the two points of the non-straight line.
+        Returns points with integer coordinates.
 
-        :param points_array: Array of points (non-straight line) to project.
+        :param points_array: Array of two points representing the non-straight line.
         :param index: Index of the straight line in self.lines.
-        :return: The point in points_array farthest from self.intersection after projection.
+        :return: The point on the straight line farthest from self.intersection (as integers).
         """
         # Straight line endpoints
         straight_line = self.lines[index].cordinate_points
@@ -321,17 +321,42 @@ class Image_Lines():
             projection_factor = np.clip(projection_factor, 0, 1)  # Clamp to segment bounds
             return p1 + projection_factor * line_vector
 
-        # Project all points onto the straight line
-        projected_points = np.array([project_point_on_line(pt, p1, p2) for pt in points_array])
+        # Take the two points from the non-straight line
+        point_a, point_b = np.array(points_array[0]), np.array(points_array[-1])
 
-        # Calculate distances from the projected points to the intersection
-        distances = np.linalg.norm(projected_points - intersection, axis=1)
+        # Project these points onto the straight line
+        closest_point_a = np.rint(project_point_on_line(point_a, p1, p2)).astype(int)
+        closest_point_b = np.rint(project_point_on_line(point_b, p1, p2)).astype(int)
 
-        # Find the index of the farthest point
-        farthest_index = np.argmax(distances)
+        # Calculate distances from the intersection to the projected points
+        distance_a = np.linalg.norm(closest_point_a - intersection)
+        distance_b = np.linalg.norm(closest_point_b - intersection)
 
-        # Return the corresponding point in the original points_array
-        return points_array[farthest_index]
+        # Return the point on the straight line farthest from the intersection
+        if distance_a > distance_b:
+            return closest_point_a
+        else:
+            return closest_point_b
+
+    def farthest_point_2(self, line):
+        """
+        Trova quale dei due punti in `line.extreme_points` è più lontano da `self.intersection`.
+
+        Args:
+            line: Oggetto con un attributo `extreme_points`, un array contenente due punti [p1, p2].
+
+        Returns:
+            Il punto più lontano da `self.intersection`.
+        """
+        # Recupera i due punti estremi
+        p1, p2 = line.extreme_points
+
+        # Calcola la distanza euclidea tra `self.intersection` e i due punti
+        dist1 = np.linalg.norm(np.array(self.intersection) - np.array(p1))
+        dist2 = np.linalg.norm(np.array(self.intersection) - np.array(p2))
+
+        # Restituisci il punto con la distanza maggiore
+        return p1 if dist1 > dist2 else p2
 
     def plot_results(self):
         fig, axes = plt.subplots(2, 2, figsize=(15, 6))
@@ -363,9 +388,9 @@ class Image_Lines():
         # ax[1].axis('image')
 
         # 2 Immagine:
-        cv.drawMarker(self.image, self.intersection, (200, 255, 200), cv.MARKER_STAR, 10, 4)
-        cv.drawMarker(self.image, self.end_ant_point, (200, 255, 200), cv.MARKER_STAR, 10, 4)
-        cv.drawMarker(self.image, self.end_pos_point, (200, 255, 200), cv.MARKER_STAR, 10, 4)
+        cv.drawMarker(self.image, self.intersection, (200, 255, 200), cv.MARKER_STAR, 20, 4)
+        cv.drawMarker(self.image, self.end_ant_point, (200, 255, 200), cv.MARKER_STAR, 20, 4)
+        cv.drawMarker(self.image, self.end_pos_point, (200, 255, 200), cv.MARKER_STAR, 20, 4)
         ax[1].imshow(self.image, cmap='gray')
         ax[1].set_ylim((self.image.shape[0], 0))
         # ax[2].set_axis_off()
