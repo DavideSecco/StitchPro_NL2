@@ -189,8 +189,8 @@ def split_image_with_wavy_cut(iamge, amplitude=30, frequency=5):
     cv2.imwrite('bottom_left.png', bottom_left)
     cv2.imwrite('bottom_right.png', bottom_right)
 
-    images = [upper_right, bottom_right, bottom_left, upper_left]
-    names = ["upper_right.tif", "bottom_right.tif", "bottom_left.tif", "upper_left.tif"]
+    images = [upper_left, upper_right, bottom_left, bottom_right]
+    names = ['upper_left.tif', 'upper_right.tif', 'bottom_left.tif', 'bottom_right.tif']
 
     return images, names
 
@@ -254,6 +254,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     ####### Visualizzazione e eventuale conversione dell'immagine #####
+    print("programma partito")
     image = tiff.imread(args.path)
     print(image.shape)
     visualize_image(image)

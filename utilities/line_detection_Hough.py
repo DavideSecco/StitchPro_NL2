@@ -138,7 +138,9 @@ class Image_Lines():
         # Questo non è il metodo migliore per trovare la fine dei lati, ma è il più pratico
         self.end_pos_point, self.end_ant_point = self.farthest_point(self.ant_points), self.farthest_point(self.pos_points)
         # self.end_pos_point, self.end_ant_point =
-        self.end_pos_point, self.end_ant_point = self.farthest_middle_point(self.ant_points, first), self.farthest_middle_point(self.pos_points, second)
+        # print(self.end_pos_point, self.end_ant_point)
+        # self.end_pos_point, self.end_ant_point = self.farthest_middle_point(self.ant_points, first), self.farthest_middle_point(self.pos_points, second)
+        # print(self.end_pos_point, self.end_ant_point)
         # self.end_pos_point, self.end_ant_point = self.farthest_point_2(self.lines[second]), self.farthest_point_2(self.lines[first])
         # print("New proposal", n1, n2)
         # DEBUGGING
