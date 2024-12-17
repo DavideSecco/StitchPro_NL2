@@ -137,10 +137,9 @@ class Image_Lines():
         # Inverti! end_ant_point va con pos_line e end_pos_points va con ant_line
         # Questo non è il metodo migliore per trovare la fine dei lati, ma è il più pratico
         self.end_pos_point, self.end_ant_point = self.farthest_point(self.ant_points), self.farthest_point(self.pos_points)
-        # self.end_pos_point, self.end_ant_point =
-        # print(self.end_pos_point, self.end_ant_point)
-        # self.end_pos_point, self.end_ant_point = self.farthest_middle_point(self.ant_points, first), self.farthest_middle_point(self.pos_points, second)
-        # print(self.end_pos_point, self.end_ant_point)
+        print(self.end_pos_point, self.end_ant_point)
+        self.end_pos_point, self.end_ant_point = self.farthest_middle_point(self.ant_points, first), self.farthest_middle_point(self.pos_points, second)
+        print(self.end_pos_point, self.end_ant_point)
         # self.end_pos_point, self.end_ant_point = self.farthest_point_2(self.lines[second]), self.farthest_point_2(self.lines[first])
         # print("New proposal", n1, n2)
         # DEBUGGING
@@ -177,12 +176,6 @@ class Image_Lines():
 
         return index, len(points), points
 
-    def is_perpendicular(self, angle1, angle2):
-        # 1) Calcola la differenza tra il primo angolo e l'angolo corrente ed evita che superi i 180 gradi
-        angle_diff = abs(angle1 - angle2) % np.pi
-        # 2) Verifica se la differenza è 90 gradi (entro una tolleranza)
-        return np.isclose(angle_diff, np.pi / 2, atol=5e-1)
-
     def best_line_combination(self):
         """
             # TODO: possibile miglioramento: tenere in condiderazione anche il valori di peaks della funzione hough
@@ -196,6 +189,15 @@ class Image_Lines():
             :return: [int, int]
                 the index of the best promising lines
         """
+
+        def lines_are_perpendicular(angle1, angle2):
+            # 1) Calcola la differenza tra il primo angolo e l'angolo corrente ed evita che superi i 180 gradi
+            angle_diff = abs(angle1 - angle2) % np.pi
+            tol = 5e-1
+            print("Le linee hanno un angolo fra loro di ", angle_diff, " sono fra loro perpendicolari se: ", np.pi / 2, "+-", tol)
+            # 2) Verifica se la differenza è 90 gradi (entro una tolleranza)
+            return np.isclose(angle_diff, np.pi / 2, atol=tol)
+        
         # 1) Filtriamo le linee che sono orizonatali e verticali
         filtered_lines_index = []
         print("\nfinding best line combination ...")
@@ -203,9 +205,9 @@ class Image_Lines():
             # x0, y0, slope, angle = line
             # Controllo per le linee verticali (|θ| ≈ π/2) e orizzontali (θ ≈ 0)
             print("line", index, "angle", self.lines[index].angle)
-            if (abs(self.lines[index].angle) < np.pi / 20 or
-                abs(self.lines[index].angle - np.pi / 2) < np.pi / 20 or
-                abs(self.lines[index].angle + np.pi / 2) < np.pi / 20):
+            if (abs(self.lines[index].angle) < np.pi / 12 or
+                abs(self.lines[index].angle - np.pi / 2) < np.pi / 12 or
+                abs(self.lines[index].angle + np.pi / 2) < np.pi / 12):
                 # Aggiunge una condizione per controllare se la linea è nell'area in basso a sinistra
                 # if x0 < self.image.shape[1] / 2 and y0 < self.image.shape[0] / 2:
                 filtered_lines_index.append(index)
@@ -236,7 +238,7 @@ class Image_Lines():
 
         # 3) Contrllo che le linee trovate siano perperndicolari fra loro:
         for index, _, _ in sorted_results:
-            if self.is_perpendicular(self.lines[sorted_results[0][0]].angle, self.lines[index].angle):
+            if lines_are_perpendicular(self.lines[sorted_results[0][0]].angle, self.lines[index].angle):
                 print(f"La linea {sorted_results[0][0]} e la linea {index} sono ortogonali")
                 return sorted_results[0][0], index
             else:
@@ -297,13 +299,12 @@ class Image_Lines():
 
     def farthest_middle_point(self, points_array, index):
         """
-        Finds the farthest point from self.intersection among the closest points
-        on the straight line to the two points of the non-straight line.
-        Returns points with integer coordinates.
+        Finds the farthest point from self.intersection among the given points,
+        projects it onto the straight line, and returns the projected point with integer coordinates.
 
-        :param points_array: Array of two points representing the non-straight line.
+        :param points_array: Array of points representing the non-straight line.
         :param index: Index of the straight line in self.lines.
-        :return: The point on the straight line farthest from self.intersection (as integers).
+        :return: The projected point on the straight line farthest from self.intersection.
         """
         # Straight line endpoints
         straight_line = self.lines[index].cordinate_points
@@ -323,22 +324,17 @@ class Image_Lines():
             projection_factor = np.clip(projection_factor, 0, 1)  # Clamp to segment bounds
             return p1 + projection_factor * line_vector
 
-        # Take the two points from the non-straight line
-        point_a, point_b = np.array(points_array[0]), np.array(points_array[-1])
+        # Step 1: Find the farthest point from intersection in points_array
+        farthest_point = max(points_array, key=lambda point: np.linalg.norm(np.array(point) - intersection))
+        farthest_point = np.array(farthest_point)
 
-        # Project these points onto the straight line
-        closest_point_a = np.rint(project_point_on_line(point_a, p1, p2)).astype(int)
-        closest_point_b = np.rint(project_point_on_line(point_b, p1, p2)).astype(int)
+        # Step 2: Project the farthest point onto the straight line
+        projected_point = project_point_on_line(farthest_point, p1, p2)
 
-        # Calculate distances from the intersection to the projected points
-        distance_a = np.linalg.norm(closest_point_a - intersection)
-        distance_b = np.linalg.norm(closest_point_b - intersection)
+        # Step 3: Round to nearest integers
+        projected_point_int = np.rint(projected_point).astype(int)
 
-        # Return the point on the straight line farthest from the intersection
-        if distance_a > distance_b:
-            return closest_point_a
-        else:
-            return closest_point_b
+        return projected_point_int
 
     def farthest_point_2(self, line):
         """
@@ -361,7 +357,7 @@ class Image_Lines():
         return p1 if dist1 > dist2 else p2
 
     def plot_results(self):
-        fig, axes = plt.subplots(2, 2, figsize=(15, 6))
+        fig, axes = plt.subplots(2, 2, figsize=(15, 9))
         ax = axes.ravel()
 
         # 1 Immagine
@@ -405,7 +401,7 @@ class Image_Lines():
             # Disegna un marker in (x0,y0)
             ax[1].scatter(line.x0, line.y0, color=colors[idx % len(colors)], marker='x', s=100)
             # Aggiungi il numero della linea vicino a (x0, y0)
-            ax[1].text(line.x0, line.y0, f"Line {idx}", color=colors[idx % len(colors)], fontsize=12,
+            ax[1].text(line.x0, line.y0, f"Line {idx}", color=colors[idx % len(colors)], fontsize=16,
                        verticalalignment='top', horizontalalignment='right')
 
 
