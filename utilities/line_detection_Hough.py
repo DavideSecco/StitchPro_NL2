@@ -8,11 +8,6 @@ from skimage.transform import hough_line, hough_line_peaks
 import math
 from utilities import Preprocessing
 
-# Definisci un'eccezione personalizzata
-class NessunaLineaOrtogonaleError(Exception):
-    '''Eccezione sollevata quando non si trovano linee ortogonali.'''
-    pass
-
 class Line():
     """
     Class used to represent a Line
@@ -37,9 +32,10 @@ class Line():
     extract_line_pixels():
         estrare dati i dati della linea, i pixels che le appartegono
     """
-    def __init__(self, angle, dist, image):
+    def __init__(self, peak, angle, dist, image):
         self.x0 = dist * np.cos(angle)
         self.y0 = dist * np.sin(angle)
+        self.peak = peak
         self.dist = dist
         self.angle = angle
         self.image = image
@@ -159,7 +155,7 @@ class Image_Lines():
             peaks = hough_line_peaks(self.h, self.theta, self.d, threshold = threshold * np.max(self.h))
 
         print(f"Ho trovato {len(peaks[0])} peaks:", peaks)
-        return [Line(angle, dist, self.image) for _, angle, dist in zip(*peaks)]
+        return [Line(peak, angle, dist, self.image) for peak, angle, dist in zip(*peaks)]
 
     def extract_points_on_border(self, index):
 
@@ -178,72 +174,88 @@ class Image_Lines():
 
     def best_line_combination(self):
         """
-            # TODO: possibile miglioramento: tenere in condiderazione anche il valori di peaks della funzione hough
-            Function that returns the best two lines, considering the fact:
-                1. the two lines must be orithontal or vertical
-                2. the two lines must overlap with the mask (the more the better)
-                3. the two lines must be orthogonal each other
+        # TODO: possibile miglioramento: tenere in condiderazione anche il valori di peaks della funzione hough
+        Function to find the best two lines based on the following criteria:
+            1. The two lines must be horizontal or vertical.
+            2. The two lines must overlap with the mask as much as possible.
+            3. The two lines must be orthogonal to each other.
 
-            At the moment is not such a clever function, can be imporved.
-
-            :return: [int, int]
-                the index of the best promising lines
+        :return: tuple (int, int)
+            Indices of the two best lines.
         """
 
-        def lines_are_perpendicular(angle1, angle2):
-            tol = 5e-1
+        def lines_are_perpendicular(angle1, angle2, tol=5e-1):
+            """
+            Check if two angles are perpendicular (difference close to 90 degrees).
 
-            # Calcola la differenza tra il primo angolo e l'angolo corrente ed evita che superi i 180 gradi
+            :param angle1: float, angle of the first line
+            :param angle2: float, angle of the second line
+            :param tol: float, tolerance for angle difference
+            :return: bool, True if the angles are perpendicular
+            """
             angle_diff = abs(angle1 - angle2) % np.pi
-            print("Le linee hanno un angolo fra loro di ", angle_diff, " sono fra loro perpendicolari se: ", np.pi / 2, "+-", tol)
+            return np.isclose(angle_diff, np.pi / 2, atol=tol)
 
-            return np.isclose(angle_diff, np.pi / 2, atol=tol) # Verifica se la differenza è 90 gradi (entro una tolleranza)
-        
-        # 1) Filtriamo le linee che sono orizonatali e verticali
+        def is_horizontal_or_vertical(angle, tolerance=np.pi / 10):
+            """
+            Check if an angle corresponds to a horizontal or vertical line.
+
+            :param angle: float, angle of the line
+            :param tolerance: float, angular tolerance
+            :return: bool, True if the angle is horizontal or vertical
+            """
+            return (
+                    abs(angle) < tolerance or
+                    abs(angle - np.pi / 2) < tolerance or
+                    abs(angle + np.pi / 2) < tolerance
+            )
+
+        # Step 1: Filter horizontal and vertical lines
+        tolerance = np.pi / 10
+        print("\nFinding best line combination ...")
+        print(f"Using tolerance = {tolerance:.4f} (π/10) and π/2 = {np.pi/2:.4f}")
         filtered_lines_index = []
-        print("\nfinding best line combination ...")
-        for index, line in enumerate(self.lines, start=0):
-            # x0, y0, slope, angle = line
-            # Controllo per le linee verticali (|θ| ≈ π/2) e orizzontali (θ ≈ 0)
-            print("line", index, "angle", self.lines[index].angle)
-            if (abs(self.lines[index].angle) < np.pi / 12 or
-                abs(self.lines[index].angle - np.pi / 2) < np.pi / 12 or
-                abs(self.lines[index].angle + np.pi / 2) < np.pi / 12):
+        for index, line in enumerate(self.lines):
+            if is_horizontal_or_vertical(line.angle, tolerance):
                 filtered_lines_index.append(index)
-                print("added")
+                print(f"Line {index} added: angle = {line.angle:.2f}, within tolerance")
             else:
-                print("Not added \n Because")
-                print("Angle:", abs(self.lines[index].angle), " > np.pi/20: ", np.pi /20)
-                print("Angle - np.pi/2: ", abs(self.lines[index].angle - np.pi / 2), " > np.pi/20: ", np.pi / 20)
-                print("Angle + np.pi/2: ", abs(self.lines[index].angle + np.pi / 2), " > np.pi/20: ", np.pi / 20)
-                print("\n")
+                print(
+                    f"Line {index} not added: angle = {line.angle:.2f}, "
+                    f"abs(angle) = {abs(line.angle):.2f}, "
+                    f"abs(angle - π/2) = {abs(line.angle - np.pi / 2):.2f}, "
+                    f"abs(angle + π/2) = {abs(line.angle + np.pi / 2):.2f}, "
+                    f"tolerance = {tolerance:.4f}"
+                )
 
-        # print("filtered_lines_index:", filtered_lines_index)
+        print(f"Filtered {len(filtered_lines_index)} horizontal/vertical lines")
 
-        # 2) Ordino le linee in base a quanti pixels sono sovrapposti con il contorno
-        results = []
-        print("\nlinee sovrapposte al contorno...")
-        for index in filtered_lines_index:
-            results.append(self.extract_points_on_border(index)) # index, len(points), points
+        # Step 2: Rank lines based on overlap with the mask
+        print("\nEvaluating overlap with mask ...")
+        overlap_results = [
+            self.extract_points_on_border(index) for index in filtered_lines_index
+        ]
 
-        # Ordina sulla base del secondo valore di ciascuna tupla
-        sorted_results = sorted(results, key=lambda x: x[1], reverse=True)
-        print("results found: ", len(results))
-        print("sorted results found: ",len(sorted_results))
-        print("Best lines:")
-        for result in sorted_results:
-            print(result[0], result[1])
+        # Sort lines by the number of overlapping points (descending)
+        sorted_results = sorted(overlap_results, key=lambda x: x[1], reverse=True)
+        print(f"Found {len(sorted_results)} sorted overlapping lines")
+        if sorted_results:
+            print("Best line candidates:")
+            for result in sorted_results[:5]:  # Print the top 5 results for inspection
+                print(f"Line {result[0]}: {result[1]} points overlap")
 
-        # 3) Contrllo che le linee trovate siano perperndicolari fra loro:
-        for index, _, _ in sorted_results:
-            if lines_are_perpendicular(self.lines[sorted_results[0][0]].angle, self.lines[index].angle):
-                print(f"La linea {sorted_results[0][0]} e la linea {index} sono ortogonali")
-                return sorted_results[0][0], index
-            else:
-                print(f"La linea {sorted_results[0][0]} e la linea {index} NON sono ortogonali")
+        # Step 3: Find two orthogonal lines
+        if not sorted_results:
+            raise ValueError("No lines found after filtering and sorting")
 
-        # Solleva un'eccezione se non si trovano linee ortogonali
-        raise NessunaLineaOrtogonaleError("Nessuna coppia di linee ortogonali trovata")
+        best_line_index = sorted_results[0][0]
+        for index, _, _ in sorted_results[1:]:
+            if lines_are_perpendicular(self.lines[best_line_index].angle, self.lines[index].angle):
+                print(f"Lines {best_line_index} and {index} are orthogonal")
+                return best_line_index, index
+
+        # Raise an exception if no orthogonal lines are found
+        raise ValueError("No orthogonal line pair found")
 
     def find_intersection(self, first, second):
         """
