@@ -905,10 +905,30 @@ if True:
         output_d_single_channel = np.sum(output_d, axis=2)
 
         # Visualizza l'immagine con una colormap
+        # Visualizza l'immagine con una colormap
+        from matplotlib.colors import ListedColormap, BoundaryNorm
+
+        # Definizione dei colori per ciascun valore
+        colors = [(1, 1, 1),  # 0: Bianco
+                  (0, 1, 0),  # 1: Verde (no sovrapposizioni)
+                  (1, 1, 0),  # 2: Giallo (due frammenti si sovrappongono)
+                  (1, 0.65, 0),  # 3: Arancione (tre frammenti si sovrappongono)
+                  (1, 0, 0)]  # 4: Rosso (quattro frammenti si sovrappongono)
+
+        # Creazione di una colormap discreta
+        cmap_custom = ListedColormap(colors)
+        norm = BoundaryNorm([0, 2, 4, 6, 8, 10], cmap_custom.N)  # Confini per ogni livello di colore
+        print(output_d_single_channel)
+        print(output_d_single_channel)
+        # Visualizzazione dell'immagine con la nuova colormap
         plt.figure()
-        plt.imshow(output_d_single_channel, cmap='hot')  # Usa una colormap per evidenziare i valori
-        plt.colorbar()  # Aggiungi una barra per visualizzare la scala dei valori
-        plt.savefig(os.path.join(save_dir, 'output_d_colormap_fixed.png'))
+        plt.imshow(output_d_single_channel, cmap=cmap_custom, norm=norm)  # Applica la colormap discreta
+        plt.colorbar(label='Livello di sovrapposizione', ticks=[0, 2, 4, 6, 8],
+                     format='%1.0f')  # Barra con tick centrati sui livelli
+        plt.title("Sovrapposizione: bianco -> verde -> giallo -> arancione -> rosso")
+        plt.axis('off')  # Rimuove gli assi per pulizia visiva
+        plt.savefig(os.path.join(save_dir, 'output_d_colormap_discrete.png'))
+        plt.show()
         # plt.close()
 
         euclidean_distance_0_1_center = np.sqrt(
