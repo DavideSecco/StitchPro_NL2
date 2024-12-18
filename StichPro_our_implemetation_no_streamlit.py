@@ -489,7 +489,7 @@ if True:
         de_result = optimize.differential_evolution(
             loss_fn, bounds, popsize=POPSIZE, maxiter=MAXITER, disp=True, x0=x0,
             mutation=[0.2, 1.0], seed=42, callback=cb,
-            args=[quadrant_list, anchor, data_dict, histogram_dists, output_size[0] / 100, 0.1, square_size // 2])
+            args=[quadrant_list, anchor, data_dict, histogram_dists, output_size[0] / 100, 0.05, square_size // 2])
 
         print(de_result)
 
