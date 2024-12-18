@@ -136,8 +136,8 @@ class Image_Lines():
 
         # Inverti! end_ant_point va con pos_line e end_pos_points va con ant_line
         # Questo non è il metodo migliore per trovare la fine dei lati, ma è il più pratico
-        self.end_pos_point, self.end_ant_point = self.farthest_point(self.ant_points), self.farthest_point(self.pos_points)
-        print(self.end_pos_point, self.end_ant_point)
+        # self.end_pos_point, self.end_ant_point = self.farthest_point(self.ant_points), self.farthest_point(self.pos_points)
+        # print(self.end_pos_point, self.end_ant_point)
         self.end_pos_point, self.end_ant_point = self.farthest_middle_point(self.ant_points, first), self.farthest_middle_point(self.pos_points, second)
         print(self.end_pos_point, self.end_ant_point)
         # self.end_pos_point, self.end_ant_point = self.farthest_point_2(self.lines[second]), self.farthest_point_2(self.lines[first])
@@ -191,12 +191,13 @@ class Image_Lines():
         """
 
         def lines_are_perpendicular(angle1, angle2):
-            # 1) Calcola la differenza tra il primo angolo e l'angolo corrente ed evita che superi i 180 gradi
-            angle_diff = abs(angle1 - angle2) % np.pi
             tol = 5e-1
+
+            # Calcola la differenza tra il primo angolo e l'angolo corrente ed evita che superi i 180 gradi
+            angle_diff = abs(angle1 - angle2) % np.pi
             print("Le linee hanno un angolo fra loro di ", angle_diff, " sono fra loro perpendicolari se: ", np.pi / 2, "+-", tol)
-            # 2) Verifica se la differenza è 90 gradi (entro una tolleranza)
-            return np.isclose(angle_diff, np.pi / 2, atol=tol)
+
+            return np.isclose(angle_diff, np.pi / 2, atol=tol) # Verifica se la differenza è 90 gradi (entro una tolleranza)
         
         # 1) Filtriamo le linee che sono orizonatali e verticali
         filtered_lines_index = []
@@ -208,25 +209,22 @@ class Image_Lines():
             if (abs(self.lines[index].angle) < np.pi / 12 or
                 abs(self.lines[index].angle - np.pi / 2) < np.pi / 12 or
                 abs(self.lines[index].angle + np.pi / 2) < np.pi / 12):
-                # Aggiunge una condizione per controllare se la linea è nell'area in basso a sinistra
-                # if x0 < self.image.shape[1] / 2 and y0 < self.image.shape[0] / 2:
                 filtered_lines_index.append(index)
                 print("added")
             else:
-                print("Not added")
-                print("Because:")
+                print("Not added \n Because")
                 print("Angle:", abs(self.lines[index].angle), " > np.pi/20: ", np.pi /20)
                 print("Angle - np.pi/2: ", abs(self.lines[index].angle - np.pi / 2), " > np.pi/20: ", np.pi / 20)
                 print("Angle + np.pi/2: ", abs(self.lines[index].angle + np.pi / 2), " > np.pi/20: ", np.pi / 20)
                 print("\n")
 
-
         # print("filtered_lines_index:", filtered_lines_index)
+
         # 2) Ordino le linee in base a quanti pixels sono sovrapposti con il contorno
         results = []
         print("\nlinee sovrapposte al contorno...")
         for index in filtered_lines_index:
-            results.append(self.extract_points_on_border(index))
+            results.append(self.extract_points_on_border(index)) # index, len(points), points
 
         # Ordina sulla base del secondo valore di ciascuna tupla
         sorted_results = sorted(results, key=lambda x: x[1], reverse=True)
