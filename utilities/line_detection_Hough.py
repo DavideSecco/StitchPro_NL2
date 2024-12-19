@@ -220,9 +220,13 @@ class Image_Lines():
             :return: float, combined score
             """
             score = points_on_border + weight_peak * peak_value
-            print(
+            log_message = (
                 f"Line {index} - Score calculation: points_on_border = {points_on_border}, peak_value = {peak_value}, "
-                f"weight_peak = {weight_peak} => score = {score:.2f}")
+                f"weight_peak = {weight_peak} => score = {score:.2f}\n"
+            )
+            print(log_message)
+            with open(os.path.join(self.save_dir,"line_scores.txt"), "a") as log_file:
+                log_file.write(log_message)
             return score
 
         # Step 1: Filter horizontal and vertical lines
