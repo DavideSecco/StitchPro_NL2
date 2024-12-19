@@ -957,7 +957,7 @@ if True:
         output = np.where(output_d > 1, output / output_d, output)
         # output[np.sum(output, axis = -1) > 650] = 0
         output = output.astype(np.uint8)
-        # plt.imsave(os.path.join(save_dir, 'pre_output3_npuint8.png'), output)
+        plt.imsave(os.path.join(save_dir, 'pre_output3_npuint8.png'), output)
 
         #imageio.imwrite("/Users/anacastroverde/Desktop/output_black.tif", output, format="tif")
 
@@ -973,8 +973,8 @@ if True:
         # # new_spacing_y = original_size[1]*original_spacing[1]/new_size[1]
         new_spacing = (2 ** int(level)) * float(original_spacing)  # *(10**(-3))
         #
-        tifffile.imwrite(os.path.join(save_dir, "output_vanilla.tif"), np.array(region), photometric='rgb', imagej=True,
-                         resolution=(1 / new_spacing, 1 / new_spacing), metadata={'spacing': new_spacing, 'unit': 'um'})
+        # Uncomment if you want the tif image
+        # tifffile.imwrite(os.path.join(save_dir, "output_vanilla.tif"), np.array(region), photometric='rgb', imagej=True, resolution=(1 / new_spacing, 1 / new_spacing), metadata={'spacing': new_spacing, 'unit': 'um'})
         # # imageio.imwrite(args.output_path+"output.tif", output, format="tif")
 
         average_euclidean_distance_mm = average_euclidean_distance_units * new_spacing * (10 ** (-3))
