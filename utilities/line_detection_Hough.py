@@ -174,7 +174,6 @@ class Image_Lines():
 
     def best_line_combination(self):
         """
-        # TODO: possibile miglioramento: tenere in condiderazione anche il valori di peaks della funzione hough
         Function to find the best two lines based on the following criteria:
             1. The two lines must be horizontal or vertical.
             2. The two lines must overlap with the mask as much as possible.
@@ -196,7 +195,7 @@ class Image_Lines():
             angle_diff = abs(angle1 - angle2) % np.pi
             return np.isclose(angle_diff, np.pi / 2, atol=tol)
 
-        def is_horizontal_or_vertical(angle, tolerance=np.pi / 10):
+        def is_horizontal_or_vertical(angle, tolerance):
             """
             Check if an angle corresponds to a horizontal or vertical line.
 
@@ -210,10 +209,26 @@ class Image_Lines():
                     abs(angle + np.pi / 2) < tolerance
             )
 
+        def calculate_line_score(index, points_on_border, peak_value, weight_peak=0.5):
+            """
+            Calculate a combined score for a line based on points on the border and its peak value.
+
+            :param index: int, index of the line
+            :param points_on_border: int, number of points the line overlaps with the mask
+            :param peak_value: float, the "straightness" of the line
+            :param weight_peak: float, weight given to the peak value in the score
+            :return: float, combined score
+            """
+            score = points_on_border + weight_peak * peak_value
+            print(
+                f"Line {index} - Score calculation: points_on_border = {points_on_border}, peak_value = {peak_value}, "
+                f"weight_peak = {weight_peak} => score = {score:.2f}")
+            return score
+
         # Step 1: Filter horizontal and vertical lines
-        tolerance = np.pi / 10
+        tolerance = np.pi / 12
         print("\nFinding best line combination ...")
-        print(f"Using tolerance = {tolerance:.4f} (π/10) and π/2 = {np.pi/2:.4f}")
+        print(f"Using tolerance = {tolerance:.4f} (π/12) and π = {np.pi:.4f}")
         filtered_lines_index = []
         for index, line in enumerate(self.lines):
             if is_horizontal_or_vertical(line.angle, tolerance):
@@ -230,26 +245,29 @@ class Image_Lines():
 
         print(f"Filtered {len(filtered_lines_index)} horizontal/vertical lines")
 
-        # Step 2: Rank lines based on overlap with the mask
-        print("\nEvaluating overlap with mask ...")
-        overlap_results = [
-            self.extract_points_on_border(index) for index in filtered_lines_index
-        ]
+        # Step 2: Rank lines based on combined score
+        print("\nEvaluating combined score for lines ...")
+        scored_results = []
+        for index in filtered_lines_index:
+            points_on_border = self.extract_points_on_border(index)[1]
+            peak_value = self.lines[index].peak
+            score = calculate_line_score(index, points_on_border, peak_value)
+            scored_results.append((index, score))
 
-        # Sort lines by the number of overlapping points (descending)
-        sorted_results = sorted(overlap_results, key=lambda x: x[1], reverse=True)
-        print(f"Found {len(sorted_results)} sorted overlapping lines")
+        # Sort lines by the combined score (descending)
+        sorted_results = sorted(scored_results, key=lambda x: x[1], reverse=True)
+        print(f"Found {len(sorted_results)} sorted lines by score")
         if sorted_results:
-            print("Best line candidates:")
+            print("Best line candidates by score:")
             for result in sorted_results[:5]:  # Print the top 5 results for inspection
-                print(f"Line {result[0]}: {result[1]} points overlap")
+                print(f"Line {result[0]}: score = {result[1]:.2f}")
 
         # Step 3: Find two orthogonal lines
         if not sorted_results:
-            raise ValueError("No lines found after filtering and sorting")
+            raise ValueError("No lines found after filtering and scoring")
 
         best_line_index = sorted_results[0][0]
-        for index, _, _ in sorted_results[1:]:
+        for index, _ in sorted_results[1:]:
             if lines_are_perpendicular(self.lines[best_line_index].angle, self.lines[index].angle):
                 print(f"Lines {best_line_index} and {index} are orthogonal")
                 return best_line_index, index
