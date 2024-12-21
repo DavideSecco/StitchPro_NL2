@@ -292,10 +292,10 @@ if True:
     image_thresholded_filtered_lr = ndi.median_filter(image_thresholded_lr, size=int(median_filter_lr_x))
 
     # Erode the image to eliminate holes
-    closing_ur_x = 15
-    closing_lr_x = 35
-    closing_ll_x = 15
-    closing_ul_x = 15
+    closing_ur_x = 30
+    closing_lr_x = 30
+    closing_ll_x = 30
+    closing_ul_x = 30
     image_thresholded_filtered_closed_ul = morphology.binary_closing(image_thresholded_filtered_ul,
                                                                      footprint=morphology.square(
                                                                          int(closing_ul_x)))  # morphology.square(30) 28 disk
