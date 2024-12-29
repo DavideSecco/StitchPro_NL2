@@ -283,13 +283,23 @@ if True:
 
     # Apply median filter to reduce the noise
     median_filter_ur_x = 20
-    median_filter_lr_x = 35
+    median_filter_lr_x = 20
     median_filter_ll_x = 20
     median_filter_ul_x = 20
     image_thresholded_filtered_ul = ndi.median_filter(image_thresholded_ul, size=int(median_filter_ul_x))
     image_thresholded_filtered_ur = ndi.median_filter(image_thresholded_ur, size=int(median_filter_ur_x))
     image_thresholded_filtered_ll = ndi.median_filter(image_thresholded_ll, size=int(median_filter_ll_x))
     image_thresholded_filtered_lr = ndi.median_filter(image_thresholded_lr, size=int(median_filter_lr_x))
+
+    if show_all_images:
+        plt.imshow(image_thresholded_filtered_ul, cmap="gray")
+        plt.savefig(os.path.join(save_dir, 'bottom_left', f'upper_left_segmentation_filtered.png'))
+        plt.imshow(image_thresholded_filtered_ur, cmap="gray")
+        plt.savefig(os.path.join(save_dir, 'bottom_right', f'upper_right_segmentation_filtered.png'))
+        plt.imshow(image_thresholded_filtered_ll, cmap="gray")
+        plt.savefig(os.path.join(save_dir, 'upper_left', f'lower_right_segmentation_filtered.png'))
+        plt.imshow(image_thresholded_filtered_lr, cmap="gray")
+        plt.savefig(os.path.join(save_dir, 'upper_right', f'lower_left_segmentation_filtered.png'))
 
     # Erode the image to eliminate holes
     closing_ur_x = 30
@@ -309,11 +319,32 @@ if True:
                                                                      footprint=morphology.square(
                                                                          int(closing_lr_x)))  # morphology.square(150) 26
 
+    if show_all_images:
+        plt.imshow(image_thresholded_filtered_closed_ul, cmap="gray")
+        plt.savefig(os.path.join(save_dir, 'bottom_left', f'upper_left_segmentation_filtered_closed.png'))
+        plt.imshow(image_thresholded_filtered_closed_ur, cmap="gray")
+        plt.savefig(os.path.join(save_dir, 'bottom_right', f'upper_right_segmentation_filtered_closed.png'))
+        plt.imshow(image_thresholded_filtered_closed_ll, cmap="gray")
+        plt.savefig(os.path.join(save_dir, 'upper_left', f'lower_right_segmentation_filtered_closed.png'))
+        plt.imshow(image_thresholded_filtered_closed_lr, cmap="gray")
+        plt.savefig(os.path.join(save_dir, 'upper_right', f'lower_left_segmentation_filtered_closed.png'))
+
+
     # Identify the image boundary
     canny_edges_ul = canny(image_thresholded_filtered_closed_ul, sigma=5)
     canny_edges_ur = canny(image_thresholded_filtered_closed_ur, sigma=5)
     canny_edges_ll = canny(image_thresholded_filtered_closed_ll, sigma=5)
     canny_edges_lr = canny(image_thresholded_filtered_closed_lr, sigma=5)
+
+    if show_all_images:
+        plt.imshow(canny_edges_ul, cmap="gray")
+        plt.savefig(os.path.join(save_dir, 'bottom_left', f'upper_left_canny.png'))
+        plt.imshow(canny_edges_ur, cmap="gray")
+        plt.savefig(os.path.join(save_dir, 'bottom_right', f'upper_right_canny.png'))
+        plt.imshow(canny_edges_ll, cmap="gray")
+        plt.savefig(os.path.join(save_dir, 'upper_left', f'lower_right_canny.png'))
+        plt.imshow(canny_edges_lr, cmap="gray")
+        plt.savefig(os.path.join(save_dir, 'upper_right', f'lower_left_canny.png'))
 
     # if st.button("Start stitching!") == True:
     if True:
