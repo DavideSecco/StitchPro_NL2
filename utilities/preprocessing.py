@@ -1,4 +1,6 @@
 import math
+import os.path
+
 import cv2
 import numpy as np
 import scipy.ndimage as ndi
@@ -11,10 +13,12 @@ from skimage.filters import threshold_otsu
 
 
 class Preprocessing:
-    def __init__(self, image_path):
-        self.original_image = imageio.imread(image_path)
-        self.processed_image = None
+    def __init__(self, img):
 
+        self.original_image = imageio.imread(img) if os.path.exists(img) else img
+        self.processed_image = None
+        self.processed_dict = {'histo_fragment': self.original_image.copy()}
+        self.original_scaled = {''}
     def show_images(self, *images, figure_title, cmap='gray'):
         n_img = len(images)
         fig, ax = plt.subplots(math.ceil(n_img / 4), n_img % 4 if n_img < 4 else 4, figsize=(10, 10))
@@ -31,6 +35,7 @@ class Preprocessing:
     def rescale_img(self, dtype=np.uint8, scaling_factor=0.25, show=False):
 
         self.processed_image = rescale(self.original_image, scaling_factor, channel_axis=2, preserve_range=True).astype(dtype)
+        self.original_scaled = rescale(self.original_image, scaling_factor, channel_axis=2, preserve_range=True).astype(dtype)
         if show:
             self.show_images(self.original_image, self.processed_image, figure_title='Rescaling')
             new_shape = self.processed_image.shape
@@ -88,7 +93,7 @@ class Preprocessing:
             plt.show()
         return self.processed_image
 
-    def applying_median_filter(self, size=5, show=False):
+    def applying_median_filter(self, size=30, show=False):
         self.processed_image = ndi.median_filter(self.processed_image, size=size)
         if show:
             self.show_images(self.original_image, self.processed_image, figure_title='Median filtering')
@@ -104,6 +109,8 @@ class Preprocessing:
         self.processed_image = feature.canny(self.processed_image, sigma=sigma)
         if show:
             self.show_images(self.original_image, self.processed_image, figure_title='Edge detection')
+
+        self.processed_dict['canny_edges'] = self.processed_image
         return self.processed_image
 
     def contours_and_hulls(self, show=False):
@@ -128,12 +135,32 @@ class Preprocessing:
         if show:
             self.show_images(x_circles, x_hull, x_full_contours, figure_title='Contours and hull')
 
+        self.processed_dict['image_thresholded_filtered_closed'] = x_full_contours
         return x_full_contours
 
-    def preprocess_image(self, threshold=None, median_filter_size=20, closing_footprint_size=20, edge_sigma=15,
-                         apply_grayscale=True, apply_threshold=True, apply_median_filter=True,
+    def crop_edges(self, buffer=40, show=False):
+        mask = self.processed_image > 0
+        mask = morphology.binary_closing(mask, morphology.disk(10))
+        mask = morphology.binary_dilation(mask, morphology.disk(buffer))
+        coords = np.argwhere(mask)
+        y_min, x_min = coords.min(axis=0)
+        y_max, x_max = coords.max(axis=0) + 1
+
+        y_min = max(y_min, 0)
+        x_min = max(x_min, 0)
+        y_max = min(y_max, self.processed_image.shape[0])
+        x_max = min(x_max, self.processed_image.shape[1])
+
+        cropped_image = self.processed_image[y_min:y_max, x_min:x_max]
+        cropped_original = self.original_scaled[y_min:y_max, x_min:x_max]
+
+        self.processed_image = cropped_image
+        self.processed_dict['histo_fragment'] = cropped_original
+
+    def preprocess_image(self, threshold=None, median_filter_size=30, closing_footprint_size=32, edge_sigma=15,
+                         apply_grayscale=True, apply_threshold=True, apply_crop_edges=True, apply_median_filter=True,
                          apply_binary_closing=True, apply_edge_detection=True, apply_hull_image=True,
-                         rescale_img=True, scaling_factor=0.25, apply_padding=True, show_steps=False):
+                         rescale_img=True, scaling_factor=0.25, apply_padding=False, show_steps=False):
         if rescale_img:
             self.rescale_img(scaling_factor=scaling_factor, show=show_steps)
         if apply_padding:
@@ -143,6 +170,8 @@ class Preprocessing:
         if apply_threshold:
             self.histogram(show=show_steps)
             self.thresholding(threshold, show=show_steps)
+        if apply_crop_edges:
+            self.crop_edges(show=show_steps)
         if apply_median_filter:
             self.applying_median_filter(size=median_filter_size, show=show_steps)
         if apply_binary_closing:
@@ -151,7 +180,24 @@ class Preprocessing:
             self.edge_detection(sigma=edge_sigma, show=show_steps)
         if apply_hull_image:
             self.processed_image = self.contours_and_hulls(show=show_steps)
-        return self.processed_image
+
+        return self.processed_dict
 
 
+if __name__ == '__main__':
+    # Main script
+    image_path = r"C:\Users\dicia\NL2_project\datasets\downsampled\pythostitcher\prostate_4\bottom_left.tif"
+    preprocessor = Preprocessing(image_path)
+    processed_image = preprocessor.preprocess_image(show_steps=True)
 
+    results = preprocessor.processed_dict
+    print(results.keys())
+
+    plt.imshow(results['canny_edges'], cmap='gray')
+    plt.show()
+
+    plt.imshow(results['histo_fragment'], cmap='gray')
+    plt.show()
+
+    plt.imshow(results['image_thresholded_filtered_closed'], cmap='gray')
+    plt.show()
