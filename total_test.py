@@ -23,7 +23,7 @@ parser.add_argument(
 parser.add_argument(
     '--script',
     type=str,
-    choices=['vanilla', 'custom'],  # Limita i valori ammissibili a 'vanilla' e 'custom'
+    choices=['vanilla', 'custom', 'custom_our_prep'],  # Limita i valori ammissibili a 'vanilla' e 'custom'
     default=None,                   # Se non viene fornito dall'utente, rimane None
     help="Script da testare (vanilla o custom)",
     required=True
@@ -63,6 +63,13 @@ for folder in sorted(os.listdir(datasets_directory)):
         # Comando da eseguire
         command = [
             'python', 'StichPro_our_implemetation_no_streamlit.py',
+            '--input_path', dataset_dir,
+            '--save_dir', save_dir
+        ]
+    elif args.script == "custom_our_prep":
+        # Comando da eseguire
+        command = [
+            'python', 'StichPro_our_implemetation_no_streamlit_our_prep.py',
             '--input_path', dataset_dir,
             '--save_dir', save_dir
         ]
