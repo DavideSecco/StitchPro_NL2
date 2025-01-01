@@ -209,7 +209,7 @@ class Image_Lines():
                     abs(angle + np.pi / 2) < tolerance
             )
 
-        def calculate_line_score(index, points_on_border, peak_value, weight_peak=0.5):
+        def calculate_line_score(index, points_on_border, peak_value, weight_peak=1):
             """
             Calculate a combined score for a line based on points on the border and its peak value.
 
@@ -230,9 +230,9 @@ class Image_Lines():
             return score
 
         # Step 1: Filter horizontal and vertical lines
-        tolerance = np.pi / 10
+        tolerance = np.pi / 8
         print("\nFinding best line combination ...")
-        print(f"Using tolerance = {tolerance:.4f} (π/10) and π = {np.pi:.4f} π/2 = {np.pi/2:.4f}")
+        print(f"Using tolerance = {tolerance:.4f} (π/8) and π = {np.pi:.4f} π/2 = {np.pi/2:.4f}")
         filtered_lines_index = []
         for index, line in enumerate(self.lines):
             if is_horizontal_or_vertical(line.angle, tolerance):
@@ -472,24 +472,40 @@ class Image_Lines():
             plt.show()
 
     def identify_quadrant(self):
-        # print("self.intersection: ", self.intersection)
-        # print("self.image.shape[0]:", self.image.shape[0])
-        # print("self.image.shape[1]:", self.image.shape[1])
+        """
+        Identifica il quadrante dell'intersezione e salva il frammento identificato in un file.
+        """
+        log_message = ""
+        if self.intersection[1] >= int(self.image.shape[0] / 2) and self.intersection[0] >= int(
+                self.image.shape[1] / 2):
+            log_message = "Intersezione trovata in basso a dx - Frammento UL"
+            print(log_message)
+            fragment = "UL"
+        elif self.intersection[1] <= int(self.image.shape[0] / 2) and self.intersection[0] >= int(
+                self.image.shape[1] / 2):
+            log_message = "Intersezione trovata in alto a dx - Frammento LL"
+            print(log_message)
+            fragment = "LL"
+        elif self.intersection[1] <= int(self.image.shape[0] / 2) and self.intersection[0] <= int(
+                self.image.shape[1] / 2):
+            log_message = "Intersezione trovata in alto a sx - Frammento LR"
+            print(log_message)
+            fragment = "LR"
+        elif self.intersection[1] >= int(self.image.shape[0] / 2) and self.intersection[0] <= int(
+                self.image.shape[1] / 2):
+            log_message = "Intersezione trovata in basso a sx - Frammento UR"
+            print(log_message)
+            fragment = "UR"
+        else:
+            log_message = "Intersezione non identificata"
+            print(log_message)
+            fragment = "Unknown"
 
-        # 1) capire in che zona è l'intersezione cosi da identificare la posizione del frammento
-        if self.intersection[1] >= int(self.image.shape[0] / 2) and self.intersection[0] >= int(self.image.shape[1] / 2):
-            print("Intersezione trovata in basso a dx - Frammento UL")
-            return "UL"
-        elif self.intersection[1] <= int(self.image.shape[0] / 2) and self.intersection[0] >= int(self.image.shape[1] / 2):
-            print("Intersezione trovata in alto a dx - Frammento LL")
-            return "LL"
-        elif self.intersection[1] <= int(self.image.shape[0] / 2) and self.intersection[0] <= int(self.image.shape[1] / 2):
-            print("Intersezione trovata in alto a sx - Frammento LR")
-            return "LR"
-        # In Basso e a Sx
-        elif self.intersection[1] >= int(self.image.shape[0] / 2) and self.intersection[0] <= int(self.image.shape[1] / 2):
-            print("Intersezione troavta in basso a Sx - Frammento UR")
-            return "UR"
+        # Salva il messaggio nel file
+        with open(os.path.join(self.save_dir, "line_scores.txt"), "a") as log_file:
+            log_file.write(f"{log_message}\n")
+
+        return fragment
 
     def invert_line_and_points(self):
         def invert():
