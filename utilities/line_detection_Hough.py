@@ -230,7 +230,7 @@ class Image_Lines():
             return score
 
         # Step 1: Filter horizontal and vertical lines
-        tolerance = np.pi / 8
+        tolerance = np.pi / 12
         print("\nFinding best line combination ...")
         print(f"Using tolerance = {tolerance:.4f} (π/8) and π = {np.pi:.4f} π/2 = {np.pi/2:.4f}")
         filtered_lines_index = []
