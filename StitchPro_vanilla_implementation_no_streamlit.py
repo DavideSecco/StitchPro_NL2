@@ -92,12 +92,15 @@ print(f"Percorso del dataset che analizzo: {dataset_folder}")
 
 # Controllo che i file dei frammenti esistano all'interno della cartella
 try:
-    # Controlla se la cartella contiene solo un file .tif
-    tif_files = [f for f in os.listdir(dataset_folder) if f.endswith('.tif')]
-    if len(tif_files) == 1:
-        single_file_path = os.path.join(dataset_folder, tif_files[0])
-        print("Passata cartella con un singolo file .tif")
-        histo_fragment_ur, histo_fragment_lr, histo_fragment_ll, histo_fragment_ul = cutter.cut_image(tiff.imread(single_file_path))
+    # Controlla se la cartella contiene un singolo file con estensione .tif, .tiff o .svs
+    valid_extensions = ('.tif', '.tiff', '.svs')
+    image_files = [f for f in os.listdir(dataset_folder) if f.endswith(valid_extensions)]
+
+    if len(image_files) == 1:
+        single_file_path = os.path.join(dataset_folder, image_files[0])
+        print("Passata cartella con un singolo file .tif/.tiff/.svs")
+        histo_fragment_ul, histo_fragment_ur, histo_fragment_ll, histo_fragment_lr = cutter.cut_image(
+            tiff.imread(single_file_path))
     else:
         # Percorsi dei file
         img_file_buffer_ur = os.path.join(dataset_folder, 'upper_right.tif')
