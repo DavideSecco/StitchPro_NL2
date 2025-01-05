@@ -93,13 +93,13 @@ class Preprocessing:
             plt.show()
         return self.processed_image
 
-    def applying_median_filter(self, size=30, show=False):
+    def applying_median_filter(self, size=20, show=False):
         self.processed_image = ndi.median_filter(self.processed_image, size=size)
         if show:
             self.show_images(self.original_image, self.processed_image, figure_title='Median filtering')
         return self.processed_image
 
-    def binary_closing_image(self, footprint_size, show=False):
+    def binary_closing_image(self, footprint_size=30, show=False):
         self.processed_image = morphology.binary_closing(self.processed_image, footprint=morphology.square(footprint_size))
         if show:
             self.show_images(self.original_image, self.processed_image, figure_title='Closed image')
@@ -157,7 +157,7 @@ class Preprocessing:
         self.processed_image = cropped_image
         self.processed_dict['histo_fragment'] = cropped_original
 
-    def preprocess_image(self, threshold=None, median_filter_size=30, closing_footprint_size=32, edge_sigma=15,
+    def preprocess_image(self, threshold=None, median_filter_size=20, closing_footprint_size=30, edge_sigma=15,
                          apply_grayscale=True, apply_threshold=True, apply_crop_edges=True, apply_median_filter=True,
                          apply_binary_closing=True, apply_edge_detection=True, apply_hull_image=True,
                          rescale_img=True, scaling_factor=0.25, apply_padding=False, show_steps=False):
