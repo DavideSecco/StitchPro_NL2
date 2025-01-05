@@ -180,8 +180,8 @@ class Preprocessing:
             self.binary_closing_image(footprint_size=closing_footprint_size, show=show_steps)
         if apply_edge_detection:
             self.edge_detection(sigma=edge_sigma, show=show_steps)
-        if apply_hull_image:
-            self.processed_image = self.contours_and_hulls(show=show_steps)
+        # if apply_hull_image:
+        #     self.processed_image = self.contours_and_hulls(show=show_steps)
 
         return self.processed_dict
 
