@@ -99,10 +99,12 @@ class Preprocessing:
             self.show_images(self.original_image, self.processed_image, figure_title='Median filtering')
         return self.processed_image
 
-    def binary_closing_image(self, footprint_size=30, show=False):
-        self.processed_image = morphology.binary_closing(self.processed_image, footprint=morphology.square(footprint_size))
+    def binary_closing_image(self, footprint_size=35, show=False):
+        self.processed_image = morphology.binary_closing(self.processed_image,
+                                                         footprint=morphology.square(footprint_size))
         if show:
             self.show_images(self.original_image, self.processed_image, figure_title='Closed image')
+        self.processed_dict['image_thresholded_filtered_closed'] = self.processed_image
         return self.processed_image
 
     def edge_detection(self, sigma=1.0, show=False):
@@ -135,7 +137,7 @@ class Preprocessing:
         if show:
             self.show_images(x_circles, x_hull, x_full_contours, figure_title='Contours and hull')
 
-        self.processed_dict['image_thresholded_filtered_closed'] = x_full_contours
+        # self.processed_dict['image_thresholded_filtered_closed'] = x_full_contours
         return x_full_contours
 
     def crop_edges(self, buffer=40, show=False):
@@ -157,9 +159,9 @@ class Preprocessing:
         self.processed_image = cropped_image
         self.processed_dict['histo_fragment'] = cropped_original
 
-    def preprocess_image(self, threshold=None, median_filter_size=20, closing_footprint_size=30, edge_sigma=15,
+    def preprocess_image(self, threshold=None, median_filter_size=10, closing_footprint_size=30, edge_sigma=15,
                          apply_grayscale=True, apply_threshold=True, apply_crop_edges=True, apply_median_filter=True,
-                         apply_binary_closing=True, apply_edge_detection=True, apply_hull_image=True,
+                         apply_binary_closing=True, apply_edge_detection=True, apply_hull_image=False,
                          rescale_img=True, scaling_factor=0.25, apply_padding=False, show_steps=False):
         if rescale_img:
             self.rescale_img(scaling_factor=scaling_factor, show=show_steps)
@@ -186,7 +188,7 @@ class Preprocessing:
 
 if __name__ == '__main__':
     # Main script
-    image_path = r"C:\Users\dicia\NL2_project\datasets\downsampled\pythostitcher\prostate_4\bottom_left.tif"
+    image_path = r"C:\Users\dicia\NL2_project\datasets\benchmark_dataset\L1\lung_02\bottom_left.tif"
     preprocessor = Preprocessing(image_path)
     processed_image = preprocessor.preprocess_image(show_steps=True)
 
