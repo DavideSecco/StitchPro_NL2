@@ -10,6 +10,7 @@ from skimage.transform import rescale
 from skimage import color, feature
 import skimage.morphology as morphology
 from skimage.filters import threshold_otsu
+import argparse
 
 
 class Preprocessing:
@@ -19,6 +20,8 @@ class Preprocessing:
         self.processed_image = None
         self.processed_dict = {'histo_fragment': self.original_image.copy()}
         self.original_scaled = {''}
+
+
     def show_images(self, *images, figure_title, cmap='gray'):
         n_img = len(images)
         fig, ax = plt.subplots(math.ceil(n_img / 4), n_img % 4 if n_img < 4 else 4, figsize=(10, 10))
@@ -158,9 +161,9 @@ class Preprocessing:
         self.processed_dict['histo_fragment'] = cropped_original
 
     def preprocess_image(self, threshold=None, median_filter_size=30, closing_footprint_size=32, edge_sigma=15,
-                         apply_grayscale=True, apply_threshold=True, apply_crop_edges=True, apply_median_filter=True,
+                         apply_grayscale=True, apply_threshold=True, apply_crop_edges=False, apply_median_filter=True,
                          apply_binary_closing=True, apply_edge_detection=True, apply_hull_image=True,
-                         rescale_img=True, scaling_factor=0.25, apply_padding=False, show_steps=False):
+                         rescale_img=True, scaling_factor=0.25, apply_padding=True, show_steps=False):
         if rescale_img:
             self.rescale_img(scaling_factor=scaling_factor, show=show_steps)
         if apply_padding:
@@ -186,7 +189,18 @@ class Preprocessing:
 
 if __name__ == '__main__':
     # Main script
-    image_path = r"C:\Users\dicia\NL2_project\datasets\downsampled\pythostitcher\prostate_4\bottom_left.tif"
+    # Parse arguments from command line
+
+
+    parser = argparse.ArgumentParser(description="Image preprocessing script")
+    parser.add_argument('--input', type=str, required=True, help="Path to the input image")
+    args = parser.parse_args()
+
+    # Use the input path from arguments
+    image_path = args.input
+
+    # print(image_path)
+
     preprocessor = Preprocessing(image_path)
     processed_image = preprocessor.preprocess_image(show_steps=True)
 
