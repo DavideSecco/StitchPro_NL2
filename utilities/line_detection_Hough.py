@@ -7,6 +7,7 @@ import numpy as np
 from skimage.transform import hough_line, hough_line_peaks
 import math
 from utilities import Preprocessing
+from scipy.ndimage import binary_dilation
 
 class Line():
     """
@@ -392,37 +393,27 @@ class Image_Lines():
         fig, axes = plt.subplots(2, 2, figsize=(15, 9))
         ax = axes.ravel()
 
-        # 1 Immagine
 
-        ax[0].imshow(self.image, cmap='gray')
-        ax[0].set_title('Input image')
+        # Assumendo che `self.image` sia un'immagine binaria con bordi sottili
+        dilated_image = binary_dilation(self.image,
+                                        structure=np.ones((5, 5)))  # Cambia il kernel (3x3) per controllare lo spessore
+
+        dilated_image = (dilated_image.astype(np.uint8) * 255)
+
+        # Mostra l'immagine dilatata
+        ax[0].imshow(dilated_image, cmap='gray')
+        ax[0].set_title('Thickened Input Image')
         ax[0].set_axis_off()
 
-        # Io onestamente toglierei questa ax[1], anche se non so se sia rilevante,
-        # non mi sono messo capire a cosa serva, ma se lo si toglie si possono togliere anche
-        # self.h, self.theta, self.d dal main
-        # e probabilmente raggruppare le due funzioni visualize
-
-        # angle_step = 0.5 * np.diff(self.theta).mean()
-        # d_step = 0.5 * np.diff(self.d).mean()
-        # bounds = [
-        #    np.rad2deg(self.theta[0] - angle_step),
-        #    np.rad2deg(self.theta[-1] + angle_step),
-        #    self.d[-1] + d_step,
-        #    self.d[0] - d_step,
-        # ]
-        # ax[1].imshow(np.log(1 + self.h), extent=bounds, cmap='gray', aspect=1 / 1.5)  # plotta la trasformata
-        # ax[1].set_title('Hough transform')
-        # ax[1].set_xlabel('Angles (degrees)')
-        # ax[1].set_ylabel('Distance (pixels)')
-        # ax[1].axis('image')
-
         # 2 Immagine:
-        cv.drawMarker(self.image, self.intersection, (200, 255, 200), cv.MARKER_STAR, 20, 4)
-        cv.drawMarker(self.image, self.end_ant_point, (200, 255, 200), cv.MARKER_STAR, 20, 4)
-        cv.drawMarker(self.image, self.end_pos_point, (200, 255, 200), cv.MARKER_STAR, 20, 4)
-        ax[1].imshow(self.image, cmap='gray')
-        ax[1].set_ylim((self.image.shape[0], 0))
+        # Copia separata per la visualizzazione
+        aux_mask = dilated_image.copy()
+
+        cv.drawMarker(dilated_image, self.intersection, (200, 255, 200), cv.MARKER_STAR, 50, 4)
+        cv.drawMarker(dilated_image, self.end_ant_point, (200, 255, 200), cv.MARKER_STAR, 50, 4)
+        cv.drawMarker(dilated_image, self.end_pos_point, (200, 255, 200), cv.MARKER_STAR, 50, 4)
+        ax[1].imshow(aux_mask, cmap='gray')
+        ax[1].set_ylim((dilated_image.shape[0], 0))
         # ax[2].set_axis_off()
         ax[1].set_title('Detected lines')
 
@@ -438,21 +429,23 @@ class Image_Lines():
 
 
         # Immagine 3
-        aux_mask = self.image.copy()
+        aux_mask = dilated_image.copy()
         aux_mask = cv.cvtColor(aux_mask, cv.COLOR_GRAY2RGB)
         # disegna i punti per sola visualizzazione
         for point in self.ant_points:
-            cv.drawMarker(aux_mask, tuple(point), color=(255, 255, 0), markerType=cv.MARKER_SQUARE, markerSize=3,
+            cv.drawMarker(aux_mask, tuple(point), color=(255, 255, 0), markerType=cv.MARKER_SQUARE, markerSize=10,
                           thickness=2)
 
         for point in self.pos_points:
-            cv.drawMarker(aux_mask, tuple(point), color=(255, 0, 0), markerType=cv.MARKER_SQUARE, markerSize=3,
+            cv.drawMarker(aux_mask, tuple(point), color=(255, 0, 0), markerType=cv.MARKER_SQUARE, markerSize=10,
                           thickness=2)
 
         ax[2].imshow(aux_mask)
         ax[2].set_title("Contorni")
 
-        aux_mask = self.image.copy()
+        # 4 Immagine
+
+        aux_mask = dilated_image.copy()
         aux_mask = cv.cvtColor(aux_mask, cv.COLOR_GRAY2RGB)
         ax[3].imshow(aux_mask)
         # Plot the line over the image
@@ -608,12 +601,15 @@ def main():
                                           closing_footprint_size=50,
                                           apply_hull_image=False)
 
+    print("Keys in processed_img:", processed_img.keys())
+    for key, value in processed_img.items():
+        print(f"Key: {key}, Shape: {value.shape}")
     # serve perché l'edge detection fatta con Canny restituisce un'immagine di tipo bool
-    processed_img = processed_img.astype(np.uint8) * 255
-    print("preprocessed_img shape: ", processed_img.shape)
+    # processed_img = processed_img.astype(np.uint8) * 255
+    # print("preprocessed_img shape: ", processed_img.shape)
 
     # Trasformation through hough
-    image_lines = Image_Lines(prep.original_image, processed_img, save_dir)
+    image_lines = Image_Lines(processed_img["histo_fragment"], processed_img["canny_edges"], save_dir)
     image_lines.plot_results()
 
     return 0
