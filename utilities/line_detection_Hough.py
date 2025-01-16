@@ -396,7 +396,7 @@ class Image_Lines():
 
         # Assumendo che `self.image` sia un'immagine binaria con bordi sottili
         dilated_image = binary_dilation(self.image,
-                                        structure=np.ones((5, 5)))  # Cambia il kernel (3x3) per controllare lo spessore
+                                        structure=np.ones((11, 11)))  # Cambia il kernel (3x3) per controllare lo spessore
 
         dilated_image = (dilated_image.astype(np.uint8) * 255)
 
@@ -420,7 +420,7 @@ class Image_Lines():
         colors = ["red", "green", "purple", "orange", "yellow"]
         # Disegna le linee e aggiungi etichette
         for idx, line in enumerate(self.lines, start=0):
-            ax[1].axline((line.x0, line.y0), slope=line.slope, color=colors[idx % len(colors)], linewidth=5 / (1 + idx))
+            ax[1].axline((line.x0, line.y0), slope=line.slope, color=colors[idx % len(colors)], linewidth=15 / (3 + idx))
             # Disegna un marker in (x0,y0)
             ax[1].scatter(line.x0, line.y0, color=colors[idx % len(colors)], marker='x', s=100)
             # Aggiungi il numero della linea vicino a (x0, y0)
@@ -449,8 +449,8 @@ class Image_Lines():
         aux_mask = cv.cvtColor(aux_mask, cv.COLOR_GRAY2RGB)
         ax[3].imshow(aux_mask)
         # Plot the line over the image
-        ax[3].axline(xy1=self.intersection, xy2=self.end_ant_point, color='yellow', linewidth=2,marker='o')
-        ax[3].axline(xy1=self.intersection, xy2=self.end_pos_point, color='red', linewidth=2, marker='o')
+        ax[3].axline(xy1=self.intersection, xy2=self.end_ant_point, color='yellow', linewidth=5,marker='o')
+        ax[3].axline(xy1=self.intersection, xy2=self.end_pos_point, color='red', linewidth=5, marker='o')
 
 
         plt.suptitle("Final result for hough_transform_skimage", fontsize=16)
