@@ -139,7 +139,8 @@ test-data/
 *.tif
 *.tiff
 *.png
-*/
+*debug*/
+*hough_trasform_results*/
 
 
 !**/*.json
