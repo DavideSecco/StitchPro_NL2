@@ -79,3 +79,24 @@ def debug_show_image(vips_img, title="Debug Image", force_grayscale=False):
     plt.axis('on')
     plt.show()
 
+
+# Funzione per visualizzare i frammenti come immagini
+def display_fragments(fragments):
+    # Numero di frammenti
+    num_fragments = len(fragments)
+    
+    # Crea una figura per visualizzare le immagini
+    fig, axes = plt.subplots(1, num_fragments, figsize=(15, 5))
+    
+    # Se c'è solo un frammento, axes non è una lista, quindi lo faccio diventare una lista
+    if num_fragments == 1:
+        axes = [axes]
+    
+    # Visualizza ogni frammento
+    for i, fragment in enumerate(fragments):
+        axes[i].imshow(fragment, cmap='gray')
+        axes[i].axis('off')
+        axes[i].set_title(f"Fragment {i+1}")
+    
+    plt.show()
+
