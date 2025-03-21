@@ -12,6 +12,7 @@ import json
 
 from shapely.geometry import LineString, Point
 from debug import *
+# from shredder.debug import display_fragments
 
 # ---------------------------------------------------------------
 # Helper functions
@@ -20,7 +21,7 @@ from debug import *
 def interpolate_contour(contour, num_points=2000):
     """
     Utility function that linearly interpolates the (x,y) points
-    along a contour to increase the point density.
+    along a contour (contorno) to increase the point density.
     """
     line = LineString(contour)
     length = line.length
@@ -34,6 +35,7 @@ def interpolate_contour(contour, num_points=2000):
 
 def apply_im_tform_to_coords(coords, pyvips_image, downscale_factor, rot_k):
     """
+    NOT UTILIZED IN THIS SCRIPT. 
     In this example, it only offsets coords if needed.
     The `rot_k` determines the 90-degree rotation increments.
     We assume a top-left origin and standard image coordinate system.
@@ -169,7 +171,7 @@ class Shredder:
         print(f"[DEBUG] Chosen rotation angle for this slide = {self.angle} degrees")
         print(f"[DEBUG] Low-res dimensions: width={self.width}, height={self.height}")
 
-    def get_shred_parameters(self):
+    def get_shred_parameters(self, debug=False):
         """
         Create random 'zig-zag' lines to define fragment boundaries.
         """
@@ -239,7 +241,8 @@ class Shredder:
         self.parameters["step_size"] = self.step
         self.parameters["edge_curvature"] = self.noise
 
-        debug_plot_lines(self, self.savedir.joinpath("zigzag_lines.png"))
+        if debug: 
+            debug_plot_lines(self, self.savedir.joinpath("zigzag_lines.png"))
 
     def apply_shred(self, debug=False):
         """
@@ -305,7 +308,7 @@ class Shredder:
             plt.show()
 
         # 5) Definisce i punti-seme (seed_points) per ciascun frammento
-        seed_offset = 100
+        seed_offset = int(self.width/4)
         if self.n_fragments == 2:
             seed_points = np.array([
                 [self.intersection[0] - seed_offset, self.intersection[1]],
@@ -318,6 +321,8 @@ class Shredder:
                 [self.intersection[0] + seed_offset, self.intersection[1] - seed_offset],
                 [self.intersection[0] + seed_offset, self.intersection[1] + seed_offset],
             ])
+
+        print(f"[DEBUG] Seed points => {seed_points}")
 
         if debug:
             # Mostriamo i seed su un'immagine grigia
@@ -334,6 +339,8 @@ class Shredder:
         num_labels, labeled_mask, stats, centroids = cv2.connectedComponentsWithStats(
             self.shredded_mask, connectivity=8
         )
+
+        num_labels = 4
         print(f"[DEBUG] Labeled mask => num_labels={num_labels}")
         for i in range(num_labels):
             x, y, w, h, area = stats[i]
@@ -354,6 +361,10 @@ class Shredder:
             self.mask_fragments.append(fragment)
             print(f"[DEBUG] Fragment {i+1} => label={label_value}, seed={seed}")
 
+        # Visualizza i frammenti
+        if debug:
+            display_fragments(self.mask_fragments)
+
         # 8) (Opzionale) Visualizzazione rapida dell'etichettatura finale
         if debug:
             plt.figure()
@@ -365,7 +376,7 @@ class Shredder:
 
 
 
-    def get_shredded_images(self, debug=True):
+    def get_shredded_images(self, debug=False):
         print("[DEBUG] get_shredded_images: Starting high-res transformations.")
 
         # 1) Padding
@@ -546,7 +557,7 @@ class Shredder:
 # Main
 # ---------------------------------------------------------------
 
-def main():
+def main_old():
     data_dir, save_dir, rotation, n_fragments = collect_arguments()
     cases = sorted(list(data_dir.iterdir()))
     print(f"Found {len(cases)} cases to shred")
@@ -557,6 +568,26 @@ def main():
         case
         for case in cases
         if not save_dir.joinpath(case.name.rstrip(".tif"), "fragment4_shred_parameters.json").exists()
+    ]
+    print(f"Shredding {len(cases)} remaining cases...\n")
+
+    for case in tqdm.tqdm(cases, total=len(cases)):
+        shredder = Shredder(case, save_dir, rotation, n_fragments)
+        shredder.process_case()
+
+def main():
+    data_dir, save_dir, rotation, n_fragments = collect_arguments()
+
+    # Raccogli tutti i file .tif nelle sottocartelle di data_dir
+    cases = sorted([case for case in data_dir.rglob('*.tif') if case.is_file()])
+
+    print(f"Found {len(cases)} cases to shred")
+
+    # Filtra i casi già processati
+    cases = [
+        case
+        for case in cases
+        if not save_dir.joinpath(case.stem, "fragment4_shred_parameters.json").exists()
     ]
     print(f"Shredding {len(cases)} remaining cases...\n")
 
