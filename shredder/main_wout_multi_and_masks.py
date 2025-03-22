@@ -128,7 +128,7 @@ class Shredder:
         # Maximum random displacement of the lines
         self.noise = 5
         # Base step between points in the line
-        self.step = 50
+        self.step = 20
 
         self.parameters = {
             "rotation": self.rotation,
@@ -248,7 +248,7 @@ class Shredder:
         """
         Costruisce la maschera di 'shredding' (senza maschere esterne) e 
         definisce le regioni corrispondenti a ciascun frammento.
-        Visualizza la maschera a ogni passaggio se debug=True.
+        Visualizza la maschera a ogni passaggio se debug=False.
 
         Passaggi:
         1) Crea una canvas bianca e traccia linee nere (0) per separare i frammenti.
@@ -308,7 +308,7 @@ class Shredder:
             plt.show()
 
         # 5) Definisce i punti-seme (seed_points) per ciascun frammento
-        seed_offset = int(self.width/4)
+        seed_offset = int(min(self.width, self.height) / 4)
         if self.n_fragments == 2:
             seed_points = np.array([
                 [self.intersection[0] - seed_offset, self.intersection[1]],
@@ -374,136 +374,270 @@ class Shredder:
             plt.scatter(seed_points[:, 0], seed_points[:, 1], marker='x', c='red')
             plt.show()
 
-
-
     def get_shredded_images(self, debug=False):
-        print("[DEBUG] get_shredded_images: Starting high-res transformations.")
-
+        print("[DEBUG] Step a) Starting high-res transformations.")
+        
         # 1) Padding
+        # (Commentato per ora, ma aggiungiamo dei print e grafici per il debug)
         # output_padding = int(self.pad_factor * min(self.full_image.width, self.full_image.height))
         # output_width  = self.full_image.width  + 2 * output_padding
         # output_height = self.full_image.height + 2 * output_padding
-
         # padded_image = self.full_image.gravity("centre", output_width, output_height)
         # print(f"[DEBUG] After padding => new size = {padded_image.width} x {padded_image.height}")
 
-        # 2) Rotazione
+        # 2) Rotazione (Opzionale, da aggiungere se necessario)
         # rot_mat = cv2.getRotationMatrix2D(center=(0, 0), angle=self.angle, scale=1)
         # rot_coeffs = [rot_mat[0, 0], rot_mat[0, 1], rot_mat[1, 0], rot_mat[1, 1]]
         # padded_image = padded_image.affine(
         #     rot_coeffs,
-        #    area=[0, 0, padded_image.width, padded_image.height]
-        #)
+        #     area=[0, 0, padded_image.width, padded_image.height]
+        # )
         # print(f"[DEBUG] Applied rotation to padded_image (angle={self.angle}).")
         # print(f"[DEBUG] Padded_image size => {padded_image.width} x {padded_image.height}")
 
         # 3) Per ogni frammento
         for count, fragment in enumerate(self.mask_fragments, start=1):
-            print(f"\n[DEBUG] Extracting fragment #{count} ...")
+            print(f"\n[DEBUG] Step Extracting fragment #{count} ...")
 
             # 'fragment' è un array numpy 2D binario [0..255], shape (h_lr, w_lr)
             h_lr, w_lr = fragment.shape
-            print(f"[DEBUG] Low-res mask shape: ({h_lr}, {w_lr})")
+            print(f"[DEBUG] Step Low-res mask shape: ({h_lr}, {w_lr})")
 
             # (Opzionale) Visualizzo subito la maschera fragment (low-res)
             if debug:
+                print(f"[DEBUG] Step Visualizing low-res mask for fragment {count} ...")
                 plt.figure()
                 plt.imshow(fragment, cmap="gray")
-                plt.title(f"Fragment {count}: Low-res mask (NumPy)")
+                plt.title(f"Fragment {count}: step 0) Low-res mask (NumPy)")
                 plt.show()
 
             # a) Convertiamo la maschera in PyVips: float32 [0..1]
+            print(f"[DEBUG] Step a) Converting fragment to PyVips format ...")
             fragment_py = pyvips.Image.new_from_memory(
                 (fragment / 255.0).astype(np.float32).ravel(),
                 w_lr, h_lr, 1, "float"
             )
 
+            fragment_py = fragment_py.cast("uchar")
+
             # (Opzionale) Visualizzo la maschera come PyVips (prima di resize/embed)
             if debug:
+                print(f"[DEBUG] Step a) Visualizing PyVips mask before resize for fragment {count} ...")
                 frag_py_np = np.ndarray(
                     buffer=fragment_py.write_to_memory(),
-                    dtype=np.float32,
+                    dtype=np.uint8,
                     shape=[h_lr, w_lr, 1]
                 )
                 plt.figure()
                 plt.imshow(frag_py_np[:, :, 0], cmap="gray")
-                plt.title(f"Fragment {count}: PyVips mask (before resize)")
+                plt.title(f"Fragment {count} step a): PyVips mask (before resize)")
                 plt.show()
 
             # b) Riscalare la maschera dalla dimensione low-res a full-res
+            print(f"[DEBUG] Step b) Resizing the mask to full-res ...")
             fragment_py = fragment_py.resize(self.lowres_downscale)
 
             # c) "Embed" la maschera nello stesso canvas dell'immagine pad/ruotata
+            print(f"[DEBUG] Step c) Embedding the mask to full canvas ...")
             fragment_py = fragment_py.embed(
                 0, 0,
-                # padded_image.width,
-                # padded_image.height,
                 self.full_image.width,
                 self.full_image.height,
                 background=0.0
             )
-            print(f"[DEBUG] Upsampled fragment mask => {fragment_py.width} x {fragment_py.height}")
+            print(f"[DEBUG] Step c) Upsampled fragment mask => {fragment_py.width} x {fragment_py.height}")
 
             # (Opzionale) Visualizzo la maschera dopo l'embed
             if debug:
+                print(f"[DEBUG] Step c) Visualizing embedded mask for fragment {count} ...")
                 frag_py_embed_np = np.ndarray(
                     buffer=fragment_py.write_to_memory(),
-                    dtype=np.float32,
+                    dtype=np.uint8,
                     shape=[self.full_image.height, self.full_image.width, 1]
                 )
                 plt.figure()
                 plt.imshow(frag_py_embed_np[:, :, 0], cmap="gray")
-                plt.title(f"Fragment {count}: PyVips mask (after embed)")
+                plt.title(f"Fragment {count}: Step c)  PyVips mask (after embed)")
                 plt.show()
 
             # d) Moltiplica pixel a pixel
-            channels = []
-            for b in range(self.full_image.bands):
-                band = self.full_image.extract_band(b)
-                band_masked = band.multiply(fragment_py)
-                channels.append(band_masked)
-            frag_fullres = channels[0].bandjoin(channels[1:]) if len(channels) > 1 else channels[0]
-            print("[DEBUG] Created full-res masked fragment.")
+            test = True
+            if test:
+                print(f"[DEBUG] Step d) Applying the mask with condition (1 for image, 0 for white)...")
+                print(type(self.full_image))
+
+                # Creiamo una maschera binaria da fragment_py (1 per vero, 0 per falso)
+                mask_binary = fragment_py > 0  # Maschera booleana (True = 1, False = 0)
+                # Convertiamo la maschera binaria in un array numpy
+                mask_binary_np = mask_binary.numpy()
+
+                # print(mask_binary_np)
+                # print(mask_binary_np.shape)
+
+                if debug:
+                    # Convertiamo la maschera binaria in un array numpy
+                    mask_binary_np = mask_binary.numpy()
+
+                    # Visualizzazione della maschera binaria
+                    print(f"[DEBUG] Step d) Visualizing binary mask ...")
+
+                    plt.figure()
+                    plt.imshow(mask_binary_np, cmap="gray")
+                    plt.title(f"Binary Mask")
+                    plt.show()
+
+                # Applichiamo la maschera direttamente all'immagine
+                full_image_np = self.full_image.numpy()  # Convertiamo l'immagine in un array NumPy
+
+                # Dove la maschera è False (0), mettiamo il valore bianco (255)
+                # Dove la maschera è True (1), manteniamo il valore dell'immagine originale
+                full_image_masked = np.where(mask_binary_np[:, :, None] == 255, full_image_np, 255)  # Mantieni i valori dell'immagine, altrimenti bianco
+
+                # Convertiamo l'immagine mascherata di nuovo in un oggetto PyVips
+                frag_fullres = pyvips.Image.new_from_array(full_image_masked.astype(np.uint8))
+
+                # print(frag_fullres.numpy())
+
+                print("[DEBUG] Step d) Created full-res masked fragment with condition.")
+
+                frag_fullres = frag_fullres.cast("uchar")
+
+                print("[DEBUG] Step d) Created full-res masked fragment with condition.")
+            else:
+                print(f"[DEBUG] Step d) Multiplying mask with image bands ...")
+                channels = []
+                for b in range(self.full_image.bands):
+                    band = self.full_image.extract_band(b)
+                    band_masked = band.multiply(fragment_py)
+                    channels.append(band_masked)
+                
+                frag_fullres = channels[0].bandjoin(channels[1:]) if len(channels) > 1 else channels[0]
+                frag_fullres = frag_fullres.cast("uchar")
+            
+            
+            print("[DEBUG] Step d) Created full-res masked fragment.")
+            print(type(frag_fullres))
+
+            if debug:
+                print(f"[DEBUG] Step e) Visualizing full-res masked fragment ...")
+                # print(frag_fullres.bands)
+                
+                # Scrivi l'immagine su memoria e convertila in numpy array
+                frag_np = np.ndarray(
+                    buffer=frag_fullres.write_to_memory(),
+                    dtype=np.uint8,
+                    shape=[frag_fullres.height, frag_fullres.width, frag_fullres.bands]
+                )
+
+                # Visualizza la forma dell'immagine
+                print(f"[DEBUG] frag_np shape: {frag_np.shape}")
+
+                # Se l'immagine ha 1 band, visualizzarla in scala di grigi
+                # Se ha >=3 band, prenderne i primi 3 come RGB
+                plt.figure()
+                if frag_np.shape[2] == 1:
+                    plt.imshow(frag_np[:, :, 0], cmap="gray")
+                    plt.title(f"Fragment {count} step d) (final) - Full-res (Grayscale)")
+                else:
+                    plt.imshow(frag_np[:, :, :3])
+                    plt.title(f"Fragment {count} step d) (final) - Full-res (RGB)")
+                plt.show()
+
+
 
             # e) Trovo bounding box
+            print(f"[DEBUG] Step e) Finding bounding box for fragment {count} ...")
             mask_np = np.ndarray(
                 buffer=fragment_py.write_to_memory(),
-                dtype=np.float32,
+                dtype=np.uint8,
                 shape=[self.full_image.height, self.full_image.width, 1]
             )
             threshold = 0.01
             ys, xs = np.where(mask_np[:, :, 0] > threshold)
             if len(xs) == 0 or len(ys) == 0:
-                print(" - [DEBUG] No content found in this fragment. Skipping.")
+                print(" - [DEBUG] Step n) No content found in this fragment. Skipping.")
                 continue
 
             xmin, xmax = xs.min(), xs.max()
             ymin, ymax = ys.min(), ys.max()
             width_f  = xmax - xmin + 1
             height_f = ymax - ymin + 1
-            print(f"[DEBUG] Fragment bounding box => (xmin={xmin}, ymin={ymin}, width={width_f}, height={height_f})")
+            print(f"[DEBUG] Step e) Fragment bounding box => (xmin={xmin}, ymin={ymin}, width={width_f}, height={height_f})")
+
+            # Visualizza la bounding box sulla maschera
+            if debug:
+                print(f"[DEBUG] Step f) Visualizing bounding box for fragment {count} ...")
+                plt.figure()
+                plt.imshow(mask_np[:, :, 0], cmap="gray")
+                plt.title(f"Fragment {count} Step e) - Bounding Box")
+                
+                # Disegna il rettangolo della bounding box
+                plt.gca().add_patch(plt.Rectangle(
+                    (xmin, ymin), width_f, height_f,
+                    edgecolor='red', facecolor='none', linewidth=2
+                ))
+
+                plt.show()
 
             # f) Crop
-            frag_fullres = frag_fullres.crop(xmin, ymin, width_f, height_f)
-            print("[DEBUG] Cropped final fragment to bounding box.")
-
-            # g) (se non servono rotazioni casuali, saltare)
-
-            # h) Risoluzione e cast a 8 bit
-            spacing = 0.25
-            xyres = 1000 / spacing
-            frag_fullres = frag_fullres.copy(xres=xyres, yres=xyres)
-            frag_fullres = frag_fullres.cast("uchar")
-
-            # (Opzionale) Visualizzo il frammento finale
+            # (Opzionale) Visualizzo il frammento prima di cropprare
             if debug:
+                print(f"[DEBUG] Step f) Visualizing fragment before cropping")
                 frag_np = np.ndarray(
                     buffer=frag_fullres.write_to_memory(),
                     dtype=np.uint8,
                     shape=[frag_fullres.height, frag_fullres.width, frag_fullres.bands]
                 )
-                # Se l'immagine ha 1 band, visualizziamo in scala di grigi
-                # Se ha >=3 band, prendiamo i primi 3 come RGB
+                if frag_np.shape[2] == 1:
+                    plt.figure()
+                    plt.imshow(frag_np[:, :, 0], cmap="gray")
+                    plt.title(f"Fragment {count} (pre crop) - Grayscale")
+                    plt.show()
+                else:
+                    plt.figure()
+                    plt.imshow(frag_np[:, :, :3])
+                    plt.title(f"Fragment {count} (pre crop) - RGB")
+                    plt.show()
+
+            print(f"[DEBUG] Step f) Cropping the fragment ...")
+            frag_fullres = frag_fullres.crop(xmin, ymin, width_f, height_f)
+            print("[DEBUG] Step f) Cropped final fragment to bounding box.")
+            print(type(frag_fullres))
+
+            # Visualizza la maschera full-res dopo il crop
+            if debug:
+                print(f"[DEBUG] Step f) Visualizing full-res mask after crop for fragment {count} ...")
+                print(f"[DEBUG] frag_fullres.bands")
+                frag_np = np.ndarray(
+                    buffer=frag_fullres.write_to_memory(),
+                    dtype=np.uint8,
+                    shape=[frag_fullres.height, frag_fullres.width, frag_fullres.bands]
+                )
+                
+                plt.figure()
+                if frag_np.shape[2] == 1:
+                    plt.imshow(frag_np[:, :, 0], cmap="gray")
+                    plt.title(f"Fragment {count} step f) (final full-res mask after crop) - Cropped Grayscale")
+                else:
+                    plt.imshow(frag_np[:, :, :3])
+                    plt.title(f"Fragment {count} step f) (final full-res mask after crop) - Cropped RGB")
+                plt.show()
+
+            # g) Risoluzione e cast a 8 bit
+            print(f"[DEBUG] Step g) Adjusting resolution and casting to 8-bit ...")
+            spacing = 0.25
+            xyres = 1000 / spacing
+            frag_fullres = frag_fullres.copy(xres=xyres, yres=xyres)
+            # frag_fullres = frag_fullres.cast("uchar")
+
+            # (Opzionale) Visualizzo il frammento finale
+            if debug:
+                print(f"[DEBUG] Step g) Visualizing final fragment for fragment {count} ...")
+                frag_np = np.ndarray(
+                    buffer=frag_fullres.write_to_memory(),
+                    dtype=np.uint8,
+                    shape=[frag_fullres.height, frag_fullres.width, frag_fullres.bands]
+                )
                 if frag_np.shape[2] == 1:
                     plt.figure()
                     plt.imshow(frag_np[:, :, 0], cmap="gray")
@@ -516,8 +650,8 @@ class Shredder:
                     plt.show()
 
             # i) Salvataggio TIF piramidale
+            print(f"[DEBUG] Step i) Saving fragment as TIF ...")
             outpath_tif = self.savedir.joinpath("raw_images", f"fragment{count}.tif")
-            print(f"[DEBUG] Saving fragment to {outpath_tif}")
             frag_fullres.write_to_file(
                 str(outpath_tif),
                 tile=True,
@@ -528,15 +662,25 @@ class Shredder:
             )
 
             # Salvataggio PNG
+            print(f"[DEBUG] Step i) Saving fragment as PNG ...")
             outpath_png = self.savedir.joinpath("raw_images", f"fragment{count}.png")
-            print(f"[DEBUG] Saving fragment to {outpath_png}")
             frag_fullres.write_to_file(str(outpath_png))
 
             # j) Salvataggio parametri
+            print(f"[DEBUG] Step j) Saving parameters for fragment {count} ...")
             with open(self.savedir.joinpath(f"fragment{count}_shred_parameters.json"), "w") as f:
                 json.dump(self.parameters, f, ensure_ascii=False)
 
             print(f"[DEBUG] Done with fragment #{count}.\n")
+
+
+
+
+
+
+
+
+    
 
 
 
