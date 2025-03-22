@@ -80,8 +80,12 @@ def debug_show_image(vips_img, title="Debug Image", force_grayscale=False):
     plt.show()
 
 
-# Funzione per visualizzare i frammenti come immagini
-def display_fragments(fragments):
+def display_fragments(fragments, save_path=None):
+    """
+    Funzione per visualizzare i frammenti come immagini.
+    Se viene fornito un percorso di salvataggio (save_path),
+    la figura verrà salvata anche su disco.
+    """
     # Numero di frammenti
     num_fragments = len(fragments)
     
@@ -98,5 +102,11 @@ def display_fragments(fragments):
         axes[i].axis('off')
         axes[i].set_title(f"Fragment {i+1}")
     
+    # Se esiste un percorso di salvataggio, salviamo la figura
+    if save_path is not None:
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        print(f"[DEBUG] Fragments plot saved to {save_path}")
+    
+    # Mostriamo a schermo
     plt.show()
 
