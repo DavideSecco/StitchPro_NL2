@@ -123,29 +123,36 @@ class Image_Lines():
         self.lines = self.hough_transform_skimage_implementation()
         # self.indexes_vert_horiz_lines = self.filter_horizontal_vertical_lines()
 
-        first, second = self.best_line_combination()
-        print("first line:", first)
-        print("second line:", second)
+        try:
+            first, second = self.best_line_combination()
+            print("first line:", first)
+            print("second line:", second)
 
-        self.ant_points = self.extract_points_on_border(first)[2]
-        self.pos_points = self.extract_points_on_border(second)[2]
-        self.intersection = self.find_intersection(first, second)  # returns (x,y) coordinates of the intersection
+            self.ant_points = self.extract_points_on_border(first)[2]
+            self.pos_points = self.extract_points_on_border(second)[2]
+            self.intersection = self.find_intersection(first, second)  # returns (x,y) coordinates of the intersection
 
-        # Inverti! end_ant_point va con pos_line e end_pos_points va con ant_line
-        # Questo non è il metodo migliore per trovare la fine dei lati, ma è il più pratico
-        # self.end_pos_point, self.end_ant_point = self.farthest_point(self.ant_points), self.farthest_point(self.pos_points)
-        # print(self.end_pos_point, self.end_ant_point)
-        self.end_pos_point, self.end_ant_point = self.farthest_middle_point(self.ant_points, first), self.farthest_middle_point(self.pos_points, second)
-        print(self.end_pos_point, self.end_ant_point)
-        # self.end_pos_point, self.end_ant_point = self.farthest_point_2(self.lines[second]), self.farthest_point_2(self.lines[first])
-        # print("New proposal", n1, n2)
-        # DEBUGGING
-        print("end_points: ", self.end_ant_point, self.end_pos_point)
-        # self.plot_results()
+            # Inverti! end_ant_point va con pos_line e end_pos_points va con ant_line
+            # Questo non è il metodo migliore per trovare la fine dei lati, ma è il più pratico
+            # self.end_pos_point, self.end_ant_point = self.farthest_point(self.ant_points), self.farthest_point(self.pos_points)
+            self.end_pos_point, self.end_ant_point = self.farthest_middle_point(self.ant_points, first), self.farthest_middle_point(self.pos_points, second)
+            print(self.end_pos_point, self.end_ant_point)
+            # DEBUGGING
+            print("end_points: ", self.end_ant_point, self.end_pos_point)
+            # self.plot_results()
 
-        self.quadrant = self.identify_quadrant()
-        self.invert_line_and_points()
-        # self.plot_results()
+            self.quadrant = self.identify_quadrant()
+            self.invert_line_and_points()
+        except ValueError as e:
+            print(e)
+            self.intersection = None
+            self.ant_points = None
+            self.pos_points = None
+            self.end_pos_point = None
+            self.end_ant_point = None
+            # raise e
+        
+        self.plot_results()
 
     def hough_transform_skimage_implementation(self):
         threshold = 1
@@ -369,31 +376,12 @@ class Image_Lines():
 
         return projected_point_int
 
-    def farthest_point_2(self, line):
-        """
-        Trova quale dei due punti in `line.extreme_points` è più lontano da `self.intersection`.
-
-        Args:
-            line: Oggetto con un attributo `extreme_points`, un array contenente due punti [p1, p2].
-
-        Returns:
-            Il punto più lontano da `self.intersection`.
-        """
-        # Recupera i due punti estremi
-        p1, p2 = line.extreme_points
-
-        # Calcola la distanza euclidea tra `self.intersection` e i due punti
-        dist1 = np.linalg.norm(np.array(self.intersection) - np.array(p1))
-        dist2 = np.linalg.norm(np.array(self.intersection) - np.array(p2))
-
-        # Restituisci il punto con la distanza maggiore
-        return p1 if dist1 > dist2 else p2
-
     def plot_results(self):
-        fig, axes = plt.subplots(2, 2, figsize=(15, 9))
+        fig, axes = plt.subplots(3, 2, figsize=(15, 9))
         ax = axes.ravel()
 
-
+        ax[5].imshow(self.original_image)
+        ax[5].set_title("original image")
         # Assumendo che `self.image` sia un'immagine binaria con bordi sottili
         dilated_image = binary_dilation(self.image,
                                         structure=np.ones((21, 21)))  # Cambia il kernel (3x3) per controllare lo spessore
@@ -427,18 +415,19 @@ class Image_Lines():
             ax[1].text(line.x0, line.y0, f"Line {idx}", color=colors[idx % len(colors)], fontsize=16,
                        verticalalignment='top', horizontalalignment='right')
 
-
+        
         # Immagine 3
         aux_mask = dilated_image.copy()
         aux_mask = cv.cvtColor(aux_mask, cv.COLOR_GRAY2RGB)
         # disegna i punti per sola visualizzazione
-        for point in self.ant_points:
-            cv.drawMarker(aux_mask, tuple(point), color=(255, 255, 0), markerType=cv.MARKER_SQUARE, markerSize=20,
-                          thickness=5)
-
-        for point in self.pos_points:
-            cv.drawMarker(aux_mask, tuple(point), color=(255, 0, 0), markerType=cv.MARKER_SQUARE, markerSize=20,
-                          thickness=5)
+        if self.ant_points is not None:
+            for point in self.ant_points:
+                cv.drawMarker(aux_mask, tuple(point), color=(255, 255, 0), markerType=cv.MARKER_SQUARE, markerSize=20,
+                            thickness=5)
+        if self.pos_points is not None:
+            for point in self.pos_points:
+                cv.drawMarker(aux_mask, tuple(point), color=(255, 0, 0), markerType=cv.MARKER_SQUARE, markerSize=20,
+                            thickness=5)
 
         ax[2].imshow(aux_mask)
         ax[2].set_title("Contorni")
@@ -449,8 +438,9 @@ class Image_Lines():
         aux_mask = cv.cvtColor(aux_mask, cv.COLOR_GRAY2RGB)
         ax[3].imshow(aux_mask)
         # Plot the line over the image
-        ax[3].axline(xy1=self.intersection, xy2=self.end_ant_point, color='yellow', linewidth=8,marker='o')
-        ax[3].axline(xy1=self.intersection, xy2=self.end_pos_point, color='red', linewidth=8, marker='o')
+        if self.intersection is not None:
+            ax[3].axline(xy1=self.intersection, xy2=self.end_ant_point, color='yellow', linewidth=8,marker='o')
+            ax[3].axline(xy1=self.intersection, xy2=self.end_pos_point, color='red', linewidth=8, marker='o')
 
 
         plt.suptitle("Final result for hough_transform_skimage", fontsize=16)
