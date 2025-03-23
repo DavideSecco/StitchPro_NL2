@@ -16,7 +16,12 @@ import argparse
 class Preprocessing:
     def __init__(self, img):
 
-        self.original_image = imageio.imread(img) if os.path.exists(img) else img
+        # Se img è una stringa (quindi un percorso), controlla se il file esiste
+        if isinstance(img, str) and os.path.exists(img):
+            self.original_image = imageio.imread(img)
+        else:
+            # Se img non è una stringa o non esiste come file, usa img come immagine già caricata
+            self.original_image = img
         self.processed_image = None
         self.processed_dict = {'histo_fragment': self.original_image.copy()}
         self.original_scaled = {''}
