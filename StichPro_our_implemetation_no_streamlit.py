@@ -42,6 +42,7 @@ import tifffile as tiff
 # IMPORT OUR CLASSES
 from utilities import Preprocessing, Line, Image_Lines, saving_functions, cutter
 from utilities.optimization_function import *
+from shredder.main_wout_multi_and_masks import * 
 
 # Names
 files = ["upper_right", "bottom_right", "bottom_left", "upper_left"]
@@ -96,10 +97,15 @@ try:
     valid_extensions = ('.tif', '.tiff', '.svs')
     image_files = [f for f in os.listdir(dataset_folder) if f.endswith(valid_extensions)]
 
+    real_cuts = True
     if len(image_files) == 1:
         single_file_path = os.path.join(dataset_folder, image_files[0])
         print("Passata cartella con un singolo file .tif/.tiff/.svs")
-        histo_fragment_ul, histo_fragment_ur, histo_fragment_ll, histo_fragment_lr= cutter.cut_image(tiff.imread(single_file_path))
+
+        if real_cuts == True:
+            histo_fragment_ul, histo_fragment_ll, histo_fragment_ur, histo_fragment_lr  = Shredder(pathlib.Path(single_file_path), None, 0, 4).final_fragments
+        else: 
+            histo_fragment_ul, histo_fragment_ur, histo_fragment_ll, histo_fragment_lr = cutter.cut_image(tiff.imread(single_file_path))
     else:
         # Percorsi dei file
         img_file_buffer_ur = os.path.join(dataset_folder, 'upper_right.tif')
@@ -441,13 +447,13 @@ if True:
             # data becomes the new parameter dictionary for image i !!!
             data = data_dict[i]
             hx, hy = [], []
-            for y, x in data["ant_points"]:
+            for y, x_p in data["ant_points"]:
                 H = calculate_histogram(
-                    data['image'], data['tissue_mask'], [x, y], n_bins, square_size)
+                    data['image'], data['tissue_mask'], [x_p, y], n_bins, square_size)
                 hx.append(H)
-            for y, x in data["pos_points"]:
+            for y, x_p in data["pos_points"]:
                 H = calculate_histogram(
-                    data['image'], data['tissue_mask'], [x, y], n_bins, square_size)
+                    data['image'], data['tissue_mask'], [x_p, y], n_bins, square_size)
                 hy.append(H)
 
             # hx is a 766x96 array where 766 is the dimension of pos_points (for each point a histo is computed)
@@ -538,7 +544,12 @@ if True:
         # Save plot
         plt.savefig(os.path.join(save_dir, 'Andamento_loss.png'))
 
-        # starts to reconstruct the final image based on the optimization
+        print(type(images_original[0]))
+
+        # Convertiamo ogni elemento di images_original in un array NumPy
+        images_original = [np.array(x) if not isinstance(x, np.ndarray) else x for x in images_original]
+
+        # starts to reconstruct the final image based on the optimization: Cmabiato per far si che images_orginal sia una lista di numpyarray
         output_size = max([max(x.shape) for x in images_original]) * 2
         # output_size = max([max(x.shape) for x in images_original])
         output_size = [output_size, output_size]
