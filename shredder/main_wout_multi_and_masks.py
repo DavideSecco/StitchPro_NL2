@@ -127,9 +127,9 @@ class Shredder:
         # Number of contour samples to define the 'zig-zag' lines
         self.n_samples = 10
         # Maximum random displacement of the lines
-        self.noise = 5
+        self.noise = 2
         # Base step between points in the line
-        self.step = 20
+        self.step = 50
 
         self.parameters = {
             "rotation": self.rotation,
@@ -385,8 +385,17 @@ class Shredder:
         # output_padding = int(self.pad_factor * min(self.full_image.width, self.full_image.height))
         # output_width  = self.full_image.width  + 2 * output_padding
         # output_height = self.full_image.height + 2 * output_padding
-        # padded_image = self.full_image.gravity("centre", output_width, output_height)
+        # self.full_image = self.full_image.gravity("centre", output_width, output_height, background=255)
         # print(f"[DEBUG] After padding => new size = {padded_image.width} x {padded_image.height}")
+
+        # (Opzionale) Visualizzo subito la maschera fragment (low-res)
+        # if debug:
+            # print(f"[DEBUG] Step 1) applied padding")
+            # plt.figure()
+            # plt.imshow(self.full_image)
+            # plt.title(f"Step 1) applied padding")
+            # plt.show()
+
 
         # 2) Rotazione (Opzionale, da aggiungere se necessario)
         # rot_mat = cv2.getRotationMatrix2D(center=(0, 0), angle=self.angle, scale=1)
@@ -632,28 +641,36 @@ class Shredder:
             spacing = 0.25
             xyres = 1000 / spacing
             frag_fullres = frag_fullres.copy(xres=xyres, yres=xyres)
-            # frag_fullres = frag_fullres.cast("uchar")
 
-            # (Opzionale) Visualizzo il frammento finale
+            # Aggiungi padding (bianco, valore 255)
+            padding_size = 100  # Esempio di dimensione del padding, puoi cambiarla come desideri
+            output_width = frag_fullres.width + 2 * padding_size
+            output_height = frag_fullres.height + 2 * padding_size
+
+            # Crea un'immagine di padding bianco e uniscila con l'immagine originale
+            padded_image = frag_fullres.gravity("centre", output_width, output_height, background=255)
+
+            # (Opzionale) Visualizza il confronto tra l'immagine originale e l'immagine con padding
             if debug:
-                print(f"[DEBUG] Step g) Visualizing final fragment for fragment {count} ...")
-                frag_np = np.ndarray(
-                    buffer=frag_fullres.write_to_memory(),
-                    dtype=np.uint8,
-                    shape=[frag_fullres.height, frag_fullres.width, frag_fullres.bands]
-                )
-                if frag_np.shape[2] == 1:
-                    plt.figure()
-                    plt.imshow(frag_np[:, :, 0], cmap="gray")
-                    plt.title(f"Fragment {count} (final) - Grayscale")
-                    plt.show()
-                else:
-                    plt.figure()
-                    plt.imshow(frag_np[:, :, :3])
-                    plt.title(f"Fragment {count} (final) - RGB")
-                    plt.show()
+                print(f"[DEBUG] Step g) Visualizing final fragment and comparison ...")
 
-            self.final_fragments.append(frag_fullres)
+                # Crea un subplot con 2 colonne per il confronto
+                fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+                
+                # Visualizza l'immagine originale
+                axes[0].imshow(frag_fullres)
+                axes[0].set_title(f"Fragment {count} - Original")
+
+                # Visualizza l'immagine con padding
+                axes[1].imshow(padded_image)
+                axes[1].set_title(f"Fragment {count} - With Padding")
+                
+                # Mostra il confronto
+                plt.tight_layout()
+                plt.show()
+
+
+            self.final_fragments.append(padded_image)
 
         for count, fragment in enumerate(self.final_fragments, start=1): 
             save = False
