@@ -113,9 +113,10 @@ def collect_arguments():
 # ---------------------------------------------------------------
 
 class Shredder:
-    def __init__(self, case, save_dir, rotation, n_fragments):
+    def __init__(self, case, save_dir=None, rotation=0, n_fragments=4):
         self.case = case
-        self.savedir = save_dir.joinpath(self.case.stem)
+        if save_dir is not None:
+            self.savedir = save_dir.joinpath(self.case.stem)
         self.rotation = rotation
         self.n_fragments = n_fragments
 
@@ -136,8 +137,10 @@ class Shredder:
         }
 
         # Make sure output directories exist
-        if not self.savedir.is_dir():
-            self.savedir.mkdir(parents=True)
+        # if savedir is not None and not self.savedir.is_dir():
+        #    self.savedir.mkdir(parents=True)
+
+        self.process_case()
             
 
     def load_images(self):
@@ -694,6 +697,8 @@ class Shredder:
         self.apply_shred()
         self.get_shredded_images()
 
+        return self.final_fragments
+
 # ---------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------
@@ -715,10 +720,10 @@ def main():
     print(f"Shredding {len(cases)} remaining cases...\n")
 
     for case in tqdm.tqdm(cases, total=len(cases)):
+        print("case:", case)
         shredder = Shredder(case, save_dir, rotation, n_fragments)
-        shredder.process_case()
-
-    return shredder.final_fragments
+        
+    
 
 if __name__ == "__main__":
     main()
