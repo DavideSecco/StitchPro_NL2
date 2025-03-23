@@ -38,10 +38,12 @@ from scipy.optimize import NonlinearConstraint
 from scipy import optimize
 import matplotlib.pyplot as plt
 import tifffile as tiff
+import subprocess
 
 # IMPORT OUR CLASSES
 from utilities import Preprocessing, Line, Image_Lines, saving_functions, cutter
 from utilities.optimization_function import *
+from shredder.main_wout_multi_and_masks import * 
 
 # Names
 files = ["upper_right", "bottom_right", "bottom_left", "upper_left"]
@@ -95,11 +97,16 @@ try:
     # Controlla se la cartella contiene un singolo file con estensione .tif, .tiff o .svs
     valid_extensions = ('.tif', '.tiff', '.svs')
     image_files = [f for f in os.listdir(dataset_folder) if f.endswith(valid_extensions)]
-
+    
+    real_cuts = True
     if len(image_files) == 1:
         single_file_path = os.path.join(dataset_folder, image_files[0])
         print("Passata cartella con un singolo file .tif/.tiff/.svs")
-        histo_fragment_ul, histo_fragment_ur, histo_fragment_ll, histo_fragment_lr= cutter.cut_image(tiff.imread(single_file_path))
+
+        if real_cuts == True:
+            histo_fragment_ul, histo_fragment_ur, histo_fragment_ll, histo_fragment_lr = Shredder(pathlib.Path(single_file_path), None, 0, 4).final_fragments
+        else: 
+            histo_fragment_ul, histo_fragment_ur, histo_fragment_ll, histo_fragment_lr = cutter.cut_image(tiff.imread(single_file_path))
     else:
         # Percorsi dei file
         img_file_buffer_ur = os.path.join(dataset_folder, 'upper_right.tif')
