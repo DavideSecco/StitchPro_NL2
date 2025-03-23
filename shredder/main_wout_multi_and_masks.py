@@ -138,7 +138,7 @@ class Shredder:
         # Make sure output directories exist
         if not self.savedir.is_dir():
             self.savedir.mkdir(parents=True)
-            self.savedir.joinpath("raw_images").mkdir()
+            
 
     def load_images(self):
         """
@@ -395,6 +395,7 @@ class Shredder:
         # print(f"[DEBUG] Applied rotation to padded_image (angle={self.angle}).")
         # print(f"[DEBUG] Padded_image size => {padded_image.width} x {padded_image.height}")
 
+        self.final_fragments = []
         # 3) Per ogni frammento
         for count, fragment in enumerate(self.mask_fragments, start=1):
             print(f"\n[DEBUG] Step Extracting fragment #{count} ...")
@@ -649,42 +650,38 @@ class Shredder:
                     plt.title(f"Fragment {count} (final) - RGB")
                     plt.show()
 
-            # i) Salvataggio TIF piramidale
-            print(f"[DEBUG] Step i) Saving fragment as TIF ...")
-            outpath_tif = self.savedir.joinpath("raw_images", f"fragment{count}.tif")
-            frag_fullres.write_to_file(
-                str(outpath_tif),
-                tile=True,
-                compression="jpeg",
-                bigtiff=True,
-                pyramid=True,
-                Q=80,
-            )
+            self.final_fragments.append(frag_fullres)
 
-            # Salvataggio PNG
-            print(f"[DEBUG] Step i) Saving fragment as PNG ...")
-            outpath_png = self.savedir.joinpath("raw_images", f"fragment{count}.png")
-            frag_fullres.write_to_file(str(outpath_png))
+        for count, fragment in enumerate(self.final_fragments, start=1): 
+            save = False
+            if save: 
+                # i) Salvataggio TIF piramidale
+                print(f"[DEBUG] Step i) Saving fragment as TIF ...")
+                outpath_tif = self.savedir.joinpath(f"fragment{count}.tif")
+                frag_fullres.write_to_file(
+                    str(outpath_tif),
+                    tile=True,
+                    compression="jpeg",
+                    bigtiff=True,
+                    pyramid=True,
+                    Q=80,
+                )
+            
+            if debug:  
+                self.savedir.joinpath("raw_images").mkdir()
+                self.savedir.joinpath("parameters").mkdir()
+                
+                # Salvataggio PNG
+                print(f"[DEBUG] Step i) Saving fragment as PNG ...")
+                outpath_png = self.savedir.joinpath("raw_images", f"fragment{count}.png")
+                frag_fullres.write_to_file(str(outpath_png))
 
-            # j) Salvataggio parametri
-            print(f"[DEBUG] Step j) Saving parameters for fragment {count} ...")
-            with open(self.savedir.joinpath(f"fragment{count}_shred_parameters.json"), "w") as f:
-                json.dump(self.parameters, f, ensure_ascii=False)
+                # j) Salvataggio parametri
+                print(f"[DEBUG] Step j) Saving parameters for fragment {count} ...")
+                with open(self.savedir.joinpath("parameters", f"fragment{count}_shred_parameters.json"), "w") as f:
+                    json.dump(self.parameters, f, ensure_ascii=False)
 
-            print(f"[DEBUG] Done with fragment #{count}.\n")
-
-
-
-
-
-
-
-
-    
-
-
-
-
+        print(f"[DEBUG] Done with fragment #{count}.\n")
 
     def process_case(self):
         print("\n[DEBUG] ===========================")
@@ -700,24 +697,6 @@ class Shredder:
 # ---------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------
-
-def main_old():
-    data_dir, save_dir, rotation, n_fragments = collect_arguments()
-    cases = sorted(list(data_dir.iterdir()))
-    print(f"Found {len(cases)} cases to shred")
-
-    # Skip cases that seem done (if 'fragment4_shred_parameters.json' already exists)
-    # Adjust if you want a different skip condition
-    cases = [
-        case
-        for case in cases
-        if not save_dir.joinpath(case.name.rstrip(".tif"), "fragment4_shred_parameters.json").exists()
-    ]
-    print(f"Shredding {len(cases)} remaining cases...\n")
-
-    for case in tqdm.tqdm(cases, total=len(cases)):
-        shredder = Shredder(case, save_dir, rotation, n_fragments)
-        shredder.process_case()
 
 def main():
     data_dir, save_dir, rotation, n_fragments = collect_arguments()
@@ -738,6 +717,8 @@ def main():
     for case in tqdm.tqdm(cases, total=len(cases)):
         shredder = Shredder(case, save_dir, rotation, n_fragments)
         shredder.process_case()
+
+    return shredder.final_fragments
 
 if __name__ == "__main__":
     main()
